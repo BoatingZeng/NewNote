@@ -6,6 +6,8 @@
 * [MongoDB](mongodb)
 * [MySQL](mysql)
 * [nginx](nginx)
+* [es6](es6)
 * [css](css)
 * [其他](other)
+* [零散例子](exampleNote)
 * [面试题](interview)
