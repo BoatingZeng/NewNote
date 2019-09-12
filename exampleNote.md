@@ -19,3 +19,6 @@ console.log(global.a);
 console.log(b);
 console.log(global.b);
 ```
+
+## nodejs里的exports和module.exports
+exports是module.exports的一个引用(short cut)。最终导出的是module.exports。所以如果只是改变了exports的指向，其实并没有改变module.exports。
