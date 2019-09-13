@@ -415,3 +415,261 @@ f.a // 1
 f.b // 2
 f.c // 3
 ```
+
+### next 方法的参数
+yield表达式本身没有返回值，或者说总是返回undefined。next方法可以带一个参数，该参数就会被当作上一个yield表达式的返回值。
+
+```js
+function* f() {
+  for(var i = 0; true; i++) {
+    var reset = yield i;
+    if(reset) { i = -1; }
+  }
+}
+var g = f();
+g.next() // { value: 0, done: false }
+g.next() // { value: 1, done: false }
+g.next(true) // { value: 0, done: false }
+
+function* foo(x) {
+  var y = 2 * (yield (x + 1));
+  var z = yield (y / 3);
+  return (x + y + z);
+}
+var a = foo(5);
+a.next() // Object{value:6, done:false}
+a.next() // Object{value:NaN, done:false}
+a.next() // Object{value:NaN, done:true}
+var b = foo(5);
+b.next() // { value:6, done:false }
+b.next(12) // { value:8, done:false }
+b.next(13) // { value:42, done:true }
+```
+
+## async函数
+1. await其实就是等待后面那个Promise resolve
+2. async函数返回Promise，如果return一个普通值，那它会被转化为Promise
+3. await后面的Promise如果被reject，是可以try..catch的
+
+## class
+
+### 基本语法
+```js
+class Point {
+  x = 0 // 实例属性，也可以写在constructor里，this.x=0
+  constructor() {}
+  toString() {}
+  toValue() {}
+  // 静态方法，实例没有这个方法，子类可以继承这个方法，静态方法内的this指向的是类
+  static st(){}
+}
+
+// 等同于
+function Point(){};
+Point.st() = function(){}; // 实例没有这个方法，无法正常继承
+Point.prototype = {
+  constructor() {this.x = 0},
+  toString() {},
+  toValue() {},
+};
+```
+
+**class定义的方法是不可枚举的，但是ES5通过prototype定义的是可枚举的**
+
+```js
+class Point {
+  constructor(x, y) {
+    // ...
+  }
+
+  toString() {
+    // ...
+  }
+}
+Object.keys(Point.prototype)
+// []
+Object.getOwnPropertyNames(Point.prototype)
+// ["constructor","toString"]
+
+var Point = function (x, y) {
+  // ...
+};
+Point.prototype.toString = function() {
+  // ...
+};
+Object.keys(Point.prototype)
+// ["toString"]
+Object.getOwnPropertyNames(Point.prototype)
+// ["constructor","toString"]
+```
+
+### new.target关键字
+该属性一般用在构造函数之中，返回new命令作用于的那个构造函数。比如`new Point()`，那`new.target===Point`。
+
+### 继承
+基本语法
+```js
+class Point {}
+
+class ColorPoint extends Point {}
+
+class ColorPoint extends Point {
+  constructor(x, y, color) {
+    super(x, y); // 调用父类的constructor(x, y)，必须在this前，而且必须调用super
+    super.p(); // 通过super关键字调用父类方法
+    this.color = color;
+  }
+
+  toString() {
+    return this.color + ' ' + super.toString(); // 调用父类的toString()
+  }
+}
+
+Object.getPrototypeOf(ColorPoint) === Point // true 可以用这个方法获取父类，其实是获取__proto__
+```
+
+### super
+可以作为父类构造函数，但是它返回的是子类实例。
+```js
+class A {}
+
+class B extends A {
+  constructor() {
+    super(); // 相当于A.prototype.constructor.call(this)
+  }
+}
+```
+
+super作为对象时，在普通方法中，指向父类的原型对象；在静态方法中，指向父类。
+
+```js
+class A {
+  static st() {
+    console.log('static');
+  }
+  p() {
+    return 2;
+  }
+}
+
+class B extends A {
+  constructor() {
+    super();
+    console.log(super.p()); // 2 super.p()就相当于A.prototype.p()
+  }
+
+  static newSt() {
+    super.st(); // super.st()相当于A.st()
+  }
+}
+
+let b = new B();
+```
+
+在子类普通方法中通过super调用父类的方法时，方法内部的this指向当前的子类实例。
+
+```js
+class A {
+  constructor() {
+    this.x = 1;
+  }
+  print() {
+    console.log(this.x);
+  }
+}
+
+class B extends A {
+  constructor() {
+    super();
+    this.x = 2;
+  }
+  m() {
+    super.print(); // print里的this是B类实例
+  }
+}
+
+let b = new B();
+b.m() // 2
+```
+
+如果通过super对某个属性赋值，这时super就是this，赋值的属性会变成子类实例的属性。
+
+```js
+class A {
+  constructor() {
+    this.x = 1;
+  }
+}
+
+class B extends A {
+  constructor() {
+    super();
+    this.x = 2;
+    super.x = 3;
+    console.log(super.x); // undefined
+    console.log(this.x); // 3
+  }
+}
+
+let b = new B();
+```
+
+### 类的prototype属性和__proto__属性
+
+```js
+class A {
+}
+
+class B extends A {
+}
+
+B.__proto__ === A // true
+B.prototype.__proto__ === A.prototype // true
+```
+上面的继承相当于这样
+```js
+class A {
+}
+
+class B {
+}
+
+// B 的实例继承 A 的实例
+Object.setPrototypeOf(B.prototype, A.prototype);
+
+// B 继承 A 的静态属性
+Object.setPrototypeOf(B, A);
+
+// Object.setPrototypeOf方法的实现
+Object.setPrototypeOf = function (obj, proto) {
+  obj.__proto__ = proto;
+  return obj;
+}
+```
+也和下面这张方法相似
+```js
+function A(){}
+
+function B(){}
+
+var F = function(){};
+
+F.prototype = A.prototype
+B.prototype = new F();
+
+B.prototype.__proto__ === A.prototype // true
+B.__proto__ === A // false，这个和上面的结果不同
+B.__proto__ === Function.prototype // true
+```
+
+作为一个对象，子类（B）的原型（__proto__属性）是父类（A）；作为一个构造函数，子类（B）的原型对象（prototype属性）是父类的原型对象（prototype属性）的实例。
+
+实例的__proto__就是类的prototype
+```js
+let a = new A();
+let b = new B();
+
+b.__proto__ === B.prototype // true
+a.__proto__ === A.prototype // true
+b.__proto__.__proto__ === a.__proto__ // true
+```
