@@ -417,7 +417,7 @@ f.c // 3
 ```
 
 ### next 方法的参数
-yield表达式本身没有返回值，或者说总是返回undefined。next方法可以带一个参数，该参数就会被当作上一个yield表达式的返回值。
+yield表达式本身没有返回值，或者说总是返回undefined。next方法可以带一个参数，该参数就会被当作**上一个**yield表达式的返回值。
 
 ```js
 function* f() {
@@ -442,8 +442,45 @@ a.next() // Object{value:NaN, done:false}
 a.next() // Object{value:NaN, done:true}
 var b = foo(5);
 b.next() // { value:6, done:false }
-b.next(12) // { value:8, done:false }
-b.next(13) // { value:42, done:true }
+b.next(12) // { value:8, done:false } 此时内部y=2*12=24
+b.next(13) // { value:42, done:true } 此时内部z=13。所以最终x+y+z=42
+```
+
+### generator的自执行
+```js
+function wait(time, data){
+  console.log('wait start');
+  return new Promise((resolve, reject)=>{
+    setTimeout(function(){
+      console.log('wait end');
+      resolve(data);
+    }, time);
+  });
+}
+
+function* gen(){
+  console.log('start');
+  let d1 = yield wait(2000, 'd1');
+  console.log('after wait 2 second', d1);
+  let d2 = yield wait(1000, 'd2');
+  console.log('after wait 1 second', d2);
+}
+
+function run(gen){
+  var g = gen();
+
+  function next(data){
+    var result = g.next(data);
+    if (result.done) return result.value;
+    result.value.then(function(data){
+      next(data);
+    });
+  }
+
+  next();
+}
+
+run(gen);
 ```
 
 ## async函数
