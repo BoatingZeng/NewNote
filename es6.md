@@ -511,33 +511,22 @@ Point.prototype = {
 };
 ```
 
-**class定义的方法是不可枚举的，但是ES5通过prototype定义的是可枚举的**
+**class定义的方法是不可枚举的，但是ES5通过prototype定义的是可枚举的。**可以利用
 
 ```js
 class Point {
-  constructor(x, y) {
-    // ...
-  }
+  constructor(x, y) {}
 
-  toString() {
-    // ...
-  }
+  toString() {}
 }
-Object.keys(Point.prototype)
-// []
-Object.getOwnPropertyNames(Point.prototype)
-// ["constructor","toString"]
+Object.keys(Point.prototype)// []
+Object.getOwnPropertyNames(Point.prototype)// ["constructor","toString"]
 
-var Point = function (x, y) {
-  // ...
-};
-Point.prototype.toString = function() {
-  // ...
-};
-Object.keys(Point.prototype)
-// ["toString"]
-Object.getOwnPropertyNames(Point.prototype)
-// ["constructor","toString"]
+var Point = function (x, y) {};
+Point.prototype.toString = function() {};
+
+Object.keys(Point.prototype)// ["toString"]
+Object.getOwnPropertyNames(Point.prototype)// ["constructor","toString"]
 ```
 
 ### new.target关键字
@@ -657,11 +646,19 @@ let b = new B();
 class A {
 }
 
+A.__proto__ === Function.prototype // true
+A.prototype.__proto__ === Object.prototype // true
+
 class B extends A {
 }
 
 B.__proto__ === A // true
 B.prototype.__proto__ === A.prototype // true
+
+class C extends null{}
+
+C.__proto__ === Function.prototype; // true
+C.prototype.__proto__ === undefined; // true
 ```
 上面的继承相当于这样
 ```js
@@ -683,7 +680,7 @@ Object.setPrototypeOf = function (obj, proto) {
   return obj;
 }
 ```
-也和下面这张方法相似
+也和下面这种方法相似
 ```js
 function A(){}
 
@@ -693,9 +690,10 @@ var F = function(){};
 
 F.prototype = A.prototype
 B.prototype = new F();
+Object.setPrototypeOf(B, A);
 
 B.prototype.__proto__ === A.prototype // true
-B.__proto__ === A // false，这个和上面的结果不同
+B.__proto__ === A // true
 B.__proto__ === Function.prototype // true
 ```
 
@@ -709,4 +707,55 @@ let b = new B();
 b.__proto__ === B.prototype // true
 a.__proto__ === A.prototype // true
 b.__proto__.__proto__ === a.__proto__ // true
+```
+
+### Babel编译Class
+
+1. ES6里Class的方法在prototype里是不可枚举的，Babel实现了这个特性，利用defineProperty设置enumerable为false。
+2. ES6静态方法，ES5直接挂在构造函数上。Babel也是这样做。
+3. 静态属性和静态方法类似。
+4. ES6的class必须要用new来调用。Babel也实现了这点，通过`this instanceof Constructor`检查当前对象是不是构造函数的实例来判断是不是通过new调用。
+5. Babel通过寄生组合式继承来实现。注意子类的prototype的constructor属性，要指向子类；注意子类的__proto__是父类；注意子类的prototype.__proto是父类prototype。
+
+```js
+// ES6继承
+class Parent {
+    constructor(name) {
+        this.name = name;
+    }
+}
+
+class Child extends Parent {
+    constructor(name, age) {
+        super(name); // 调用父类的 constructor(name)
+        this.age = age;
+    }
+}
+
+// Babel实现和下面类似
+function Parent (name) {
+    this.name = name;
+}
+
+function Child (name, age) {
+    Parent.call(this, name);
+    this.age = age;
+}
+
+function prototype(c, p) {
+    // c.prototype.__proto__ === p.prototype
+    var prototype = Object.create(p.prototype, {
+      constructor: {
+        value: c,
+        writable: true,
+        configurable: true
+      }
+    });
+    c.prototype = prototype;
+    Object.setPrototypeOf(c, p); // c.__proto__ === p
+}
+
+prototype(Child, Parent);
+
+var child1 = new Child('kevin', '18');
 ```

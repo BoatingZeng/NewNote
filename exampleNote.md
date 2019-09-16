@@ -22,3 +22,25 @@ console.log(global.b);
 
 ## nodejs里的exports和module.exports
 exports是module.exports的一个引用(short cut)。最终导出的是module.exports。所以如果只是改变了exports的指向，其实并没有改变module.exports。
+
+## Object.create()和Object.setPrototypeOf()
+这两个方法都会让目标对象的__proto__指向指定的对象。
+
+```js
+const person = {
+  isHuman: false,
+  printIntroduction: function () {
+    console.log(`My name is ${this.name}. Am I human? ${this.isHuman}`);
+  }
+};
+
+const me = Object.create(person);
+
+me.__proto__ === person // true
+
+const you = {};
+
+Object.setPrototypeOf(me, person);
+
+you.__proto__ === person; // true
+```
