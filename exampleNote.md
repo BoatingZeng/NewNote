@@ -44,3 +44,35 @@ Object.setPrototypeOf(me, person);
 
 you.__proto__ === person; // true
 ```
+
+## 定义getter和setter的方法
+
+### 对象初始化时定义
+```js
+let o = {
+  _num: 1,
+  get num() {return this._num;},
+  set num(n) {this._num = n;}
+};
+```
+
+### 用Object.create
+```js
+let o = Object.create(Object.prototype,
+  {
+    num: {
+      get(){return 1;},
+      set(n){console.log(n);}
+    }
+  }
+);
+```
+
+### 用Object.defineProperty
+```js
+let o = {_num: 1};
+Object.defineProperty(o, 'num',{
+  get() {return this._num;},
+  set(n) {this._num = n}
+});
+```

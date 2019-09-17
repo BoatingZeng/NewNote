@@ -339,12 +339,14 @@ iframe.contentWindow.Symbol.for('foo') === Symbol.for('foo') // true
 2. 如果外部不再引用WeakMap内某个键，它会被回收
 
 ## Proxy
-用途：对象监听
+用途：对象监听。比起definePropety的setter和getter，Proxy可以拦截关键字或者运算符还有函数等的默认行为。而且不用一个个属性通过definePropety定义，而是可以通过统一的handler拦截。
+
+set和get这两个拦截器的receiver参数，一般情况都不用，主要是在当对象的属性不是正常访问和设置时使用。(正常访问和设置，一般就是通过点运算符来访问和设置)
 
 https://github.com/mqyqingfeng/Blog/issues/107
 
 ## Reflect
-把Object的一些方法放到Reflect。并且和Proxy的方法一一对应。
+是个对象，不是函数。其方法和Proxy的方法一一对应。
 
 ## Iterator和for...of
 有Symbol.iterator属性的对象，就是可遍历的(可for..of)
