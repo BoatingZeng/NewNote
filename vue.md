@@ -1,3 +1,8 @@
+* diff
+* render函数
+* 生命周期钩子
+* 双向绑定
+
 ## 面试题中关于vue的
 
 ### 写React/Vue项目时为什么要在列表组件中写key，其作用是什么？
@@ -15,6 +20,13 @@ https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/45
 * 主要是用来处理一些全局状态
 * 有规范的api去操作这些状态
 
+#### 为什么Vuex的mutation和Redux的reducer中不能做异步操作
+https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/65
+
+官方文档解释：https://vuex.vuejs.org/zh/guide/mutations.html#mutation-%E5%BF%85%E9%A1%BB%E6%98%AF%E5%90%8C%E6%AD%A5%E5%87%BD%E6%95%B0
+
+这里的解释意思看上去就是为了方便debug。感觉主要是一种约定，另外就是模仿Redux。
+
 ### Vue 的双向数据绑定
 https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/34
 
@@ -22,7 +34,7 @@ https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/34
 https://zhuanlan.zhihu.com/p/29318017
 
 * 在计算属性第一次被读取时，把依赖关系(所需执行的函数)添加到它依赖的属性里，依赖只需添加一次
-* 之后被依赖的属性被修改时，就会触发这个依赖关系(所需执行的函数)
+* 之后依赖的属性被修改时，就会触发这个依赖关系(所需执行的函数)
 
 ```js
 /**
@@ -96,8 +108,10 @@ function watcher (obj, key, cb) {
   Object.defineProperty(obj, key, {
     get () {
       Dep.target = onDepUpdated
-      // 执行cb()的过程中会用到Dep.target，
-      // 当cb()执行完了就重置Dep.target为null
+      // 这里是重点！！！！！
+      // cb里是用到依赖的属性的，所以会触发依赖属性的getter，因此可以把依赖添加到依赖属性里
+      // 执行cb()的过程中会用到Dep.target，target会被添加到依赖属性维护的deps数组里
+      // 当cb()执行完了就重置Dep.target为null，因为依赖添加一次就好了
       const val = cb()
       Dep.target = null
       return val
@@ -215,3 +229,86 @@ new Watcher(hero, 'type', () => {
 console.log(`英雄初始类型：${hero.type}`)
 hero.health = 5000
 ```
+
+### 在Vue中，子组件为何不可以修改父组件传递的Prop，如果修改了，Vue是如何监控到属性的修改并给出警告的
+https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/60
+
+官方文档的说法：父级prop的更新会向下流动到子组件中，但是反过来则不行。这样会防止从子组件意外改变父级组件的状态，从而导致你的应用的数据流向难以理解。额外的，每次父级组件发生更新时，子组件中所有的prop都将会刷新为最新的值。这意味着你不应该在一个子组件内部改变prop。
+
+监控是在prop的setter里监控的。如果不是根组件，而且不是更新子组件，这次setter调用就会触发警告。
+
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <title>vue prop test</title>
+</head>
+<template id="childTemplate">
+  <div>
+    <div>{{count}}</div>
+    <div>{{fromParent}}</div>
+    <button @click="test">子</button>
+  </div>
+</template>
+<script src="vue.js"></script>
+<body>
+  <div id="app">
+    {{message}}{{rootprop}}
+    <child :from-parent=message></child>
+    <button @click="test">父</button>
+  </div>
+  <script>
+    Vue.component('child', {
+      props: ['fromParent'],
+      data() {
+        return {
+          count: 1
+        }
+      },
+      methods: {
+        test() {
+          console.log(this.fromParent);
+          this.fromParent = 'change by child'; // 子组件的fromParent被改变，但是父组件的message不会被改变，并且抛出warn
+        }
+      },
+      template: '#childTemplate'
+    })
+
+    new Vue({
+      props: ['rootprop'], // 根组件也可以有props的，通过propsData传入
+      el: '#app',
+      data(){
+        return {
+          message: 'Hello Vue!',
+        }
+      },
+      methods: {
+        test() {
+          this.message = 'change by parent';
+        }
+      },
+      propsData: {
+        rootprop: 'rp'
+      }
+    })
+  </script>
+</body>
+</html>
+```
+
+### Vue的响应式原理中Object.defineProperty有什么缺陷
+https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/90
+
+* 对于对象，需要进行深度遍历来进行defineProperty。这个一般不是大问题。
+* 对数组的监测能力有限，最明显的就是无法监测数组下标的变化。需要通过几个特定函数来监听数组变化。
+* 由于js里数组也是对象，数组下标其实也是对象属性，事实上defineProperty是可以对数组下标设置getter和setter的。但是数组下标也是对象属性，这本来就是js的一个奇怪特性(哈哈，数组下标也是key？)，不应该利用，就算用，性能也是有问题。
+* 如果用proxy的话，不需要对每个属性进行setter和getter的设置，而是对象整体监听。不过Prxoy这个特性是es6的，而且无法polyfill。
+
+### vue在v-for时给每项元素绑定事件需要用事件代理吗？为什么？
+https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/145
+
+* vue没有做事件代理。
+* 事件代理的一个好处是方便添加和去除事件，但是vue帮你做了。
+* 关于性能，列表里的不同listener实际上用的是同一个函数。除非列表真的很大(或者客户端性能很差)，否则不需要事件代理。
+

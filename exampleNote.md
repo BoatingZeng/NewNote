@@ -80,3 +80,16 @@ Object.defineProperty(o, 'num',{
 ## 防抖和节流的区别
 * 防抖：在事件被触发n秒后再执行回调，如果在这n秒内又被触发，则重新计时。比如搜索框的输入，是用户停止一段时间后才会去执行搜索。比如window触发resize的时候，不断的调整浏览器窗口大小会不断的触发这个事件，用防抖来让其只触发一次。
 * 节流：规定在一个单位时间内，只能触发一次函数。如果这个单位时间内触发多次函数，只有一次生效。比如用户不停地点击，只让其中一部分点击生效。比如懒加载时要监听计算滚动条的位置，但不必每次滑动都触发。
+
+## 页面上传文件(ajax)
+
+### 用FormData
+最简单的办法。IE10以上才有FormData。
+
+```js
+var formData = new FormData(); // 可以用一个现有的form来构造
+formData.append("userfile", fileInputElement.files[0]); // 添加一个文件(File对象)
+var request = new XMLHttpRequest();
+request.open("POST", "http://foo.com/submitform.php");
+request.send(formData);
+```
