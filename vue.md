@@ -1,7 +1,109 @@
-* diff
-* render函数
-* 生命周期钩子
-* 双向绑定
+## 虚拟dom、diff、渲染
+https://www.zhihu.com/question/31809713
+
+dom操作不是纯js层面的操作。而virtual dom操作是纯js操作，而且也没有真正的dom那么复杂，它是比真正的dom操作快的。
+
+https://www.jianshu.com/p/398e63dc1969
+https://segmentfault.com/a/1190000008782928
+https://juejin.im/post/5d085ce85188255e1305cda1
+
+## render函数
+```js
+// 这个属性在组件定义里作为template的代替
+render: function (createElement) {
+  return createElement('h1', this.blogTitle)
+}
+
+// 经常看到这种形式，这里的App是.vue文件导出的一个Object，也就是一个组件对象
+render: h => h(App)
+```
+
+这个createElement返回的是一个VNode对象。
+
+## 插槽(slot)
+* 2.6.0之后，v-slot只能添加在`<template>`上
+* 可以在slot中倒出子组件属性，让父组件访问
+* 2.6.0后slot和slot-scope语法被废弃。2.x版本内仍可用，详见下面例子
+
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <title>vue slot test</title>
+</head>
+<template id="childTemplate">
+    <div>
+      <div>
+        <slot name="slot_1">具名slot1</slot>
+      </div>
+      <div>
+        <slot>默认slot</slot>
+      </div>
+      <div>
+        <slot name="slot_2">具名slot2</slot>
+      </div>
+      <div>
+        <!-- 这里导出了user这个属性，user是子组件的属性名，outuser是导出时的别名 -->
+        <slot name="slot_3" :outuser="user">
+          {{ user.lastName }}
+        </slot>
+      </div>
+      <div>
+        <slot name="slot_4" :outuser="user">
+            {{ user.lastName }}
+        </slot>
+      </div>
+    </div>
+</template>
+<script src="vue.js"></script>
+<body>
+  <div id="app">
+    <child>
+      插入默认slot的内容
+      <template v-slot:slot_1>插入具名slot1的内容</template>
+      这段也会被插带默认slot
+      <div>
+        也在默认slot
+      </div>
+      <template v-slot:slot_2>插入具名slot2的内容</template>
+      <div>
+        所以用的时候，插入到默认slot最好还是写在一起，避免迷惑。因为在组件里他们是在一起的。
+      </div>
+      <template v-slot:slot_3="slotProps">
+        <!-- 通过slotProps访问子组件的user，用的时导出时的别名outuser -->
+        <div>{{ slotProps.outuser.firstName }}</div>
+      </template>
+      <!-- 下面是2.6.0之后被废弃的语法 -->
+      <template slot="slot_4" slot-scope="slotProps">
+        <div>{{ d.outuser.firstName }}</div>
+      </template>
+    </child>
+  </div>
+<script>
+Vue.component('child', {
+  data() {
+    return {
+      user: {
+        firstName: 'boating',
+        lastName: 'zeng'
+      }
+    }
+  },
+  template: '#childTemplate'
+});
+
+new Vue({
+  el: '#app',
+  data(){
+    return {
+    }
+  },
+})
+</script>
+</body>
+</html>
+```
 
 ## 面试题中关于vue的
 
