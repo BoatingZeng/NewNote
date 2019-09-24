@@ -9,6 +9,7 @@
 * [es6](es6)
 * [css](css)
 * [vue](vue)
+* [算法](algorithm)
 * [其他](other)
 * [零散例子](exampleNote)
 * [面试题](interview)
