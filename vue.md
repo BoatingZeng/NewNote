@@ -3,9 +3,9 @@ https://www.zhihu.com/question/31809713
 
 dom操作不是纯js层面的操作。而virtual dom操作是纯js操作，而且也没有真正的dom那么复杂，它是比真正的dom操作快的。
 
-https://www.jianshu.com/p/398e63dc1969
-https://segmentfault.com/a/1190000008782928
 https://juejin.im/post/5d085ce85188255e1305cda1
+https://github.com/aooy/blog/issues/2
+https://github.com/answershuto/learnVue/blob/master/docs/VirtualDOM%E4%B8%8Ediff(Vue%E5%AE%9E%E7%8E%B0).MarkDown
 
 ## render函数
 ```js
