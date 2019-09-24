@@ -258,3 +258,110 @@ query_in_transaction();
 
 ### 日志的问题
 * https://www.jianshu.com/p/919f3e288e5a
+
+## 子进程
+exec和fork等，其实都是用spawn实现的，所以实际上就spwan一个方法。
+
+把fork的实现抽出来，下面的`stdioStringToArray`和`fork`都是从nodejs源码拷贝出来的。p.js是父进程，c.js是子进程。
+```js
+// p.js
+const { spawn } = require( 'child_process');
+const util = require('util');
+
+function stdioStringToArray(option) {
+  switch (option) {
+    case 'ignore':
+    case 'pipe':
+    case 'inherit':
+      return [option, option, option, 'ipc'];
+    default:
+      throw new ERR_INVALID_OPT_VALUE('stdio', option);
+  }
+}
+
+function fork(modulePath /* , args, options */) {
+
+  // Get options and args arguments.
+  var execArgv;
+  var options = {};
+  var args = [];
+  var pos = 1;
+  if (pos < arguments.length && Array.isArray(arguments[pos])) {
+    args = arguments[pos++];
+  }
+
+  if (pos < arguments.length &&
+      (arguments[pos] === undefined || arguments[pos] === null)) {
+    pos++;
+  }
+
+  if (pos < arguments.length && arguments[pos] != null) {
+    if (typeof arguments[pos] !== 'object') {
+      throw new ERR_INVALID_ARG_VALUE(`arguments[${pos}]`, arguments[pos]);
+    }
+
+    options = util._extend({}, arguments[pos++]);
+  }
+
+  // Prepare arguments for fork:
+  execArgv = options.execArgv || process.execArgv;
+
+  if (execArgv === process.execArgv && process._eval != null) {
+    const index = execArgv.lastIndexOf(process._eval);
+    if (index > 0) {
+      // Remove the -e switch to avoid fork bombing ourselves.
+      execArgv = execArgv.slice();
+      execArgv.splice(index - 1, 2);
+    }
+  }
+
+  args = execArgv.concat([modulePath], args);
+
+  if (typeof options.stdio === 'string') {
+    options.stdio = stdioStringToArray(options.stdio);
+  } else if (!Array.isArray(options.stdio)) {
+    // Use a separate fd=3 for the IPC channel. Inherit stdin, stdout,
+    // and stderr from the parent if silent isn't set.
+    options.stdio = options.silent ? stdioStringToArray('pipe') :
+      stdioStringToArray('inherit');
+  } else if (options.stdio.indexOf('ipc') === -1) {
+    throw new ERR_CHILD_PROCESS_IPC_REQUIRED('options.stdio');
+  }
+
+  options.execPath = options.execPath || process.execPath;
+  options.shell = false;
+  console.log('看看最终传给spawn的参数');
+  console.log(options);
+  // { stdio: [ 'pipe', 'pipe', 'pipe', 'ipc' ], ipc表示在父子进程间设置IPC信道
+  // execPath: 'F:\\Program Files\\node-v10.11.0-win-x64\\node.exe',
+  // shell: false }
+  console.log(args); // [ './c.js' ]
+  return spawn(options.execPath, args, options);
+};
+
+// 这样和下面执行fork是一样的
+// const options = { 
+//   stdio: [ 'pipe', 'pipe', 'pipe', 'ipc' ],
+//   execPath: 'F:\\Program Files\\node-v10.11.0-win-x64\\node.exe',
+//   shell: false 
+// };
+// const n = spawn('F:\\Program Files\\node-v10.11.0-win-x64\\node.exe', ['./c.js'], options);
+
+const n = fork('./c.js', {stdio: 'pipe'});
+// 因为设置了ipc信道，所以父子进程可以通过message事件和send方法通讯
+n.on( 'message', ( m) => {
+  console.log( 'PARENT got message:',  m);
+});
+n.send({ hello:  'world' });
+// 因为上面设置了stdio是pipe，所以子进程打印的东西会传过来
+n.stdout.on('data', (data)=>{
+  // 这个data是个Buffer
+  console.log('stdout：'+data);
+});
+
+// c.js
+process.on( 'message', ( m) => {
+  console.log( 'CHILD got message:',  m);
+});
+process.send({ foo:  'bar' });
+```
