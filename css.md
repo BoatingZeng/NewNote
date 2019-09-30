@@ -38,16 +38,9 @@
 * 用户和作者的样式都高于浏览器默认
 * 排在后面的声明，权重更高
 
-## 参考链接汇总
-因为实在太杂太多了。所以放参考记录参考链接方便查水表。先记录一些汇总链接，然后后面补充一些特定主题的。
+## 块级元素、行内元素
 
-### 无主题或者杂主题
-* HTML和CSS常见问题整理：https://github.com/yygmind/blog/issues/3
-* 壹题汇总的CSS部分：https://muyiy.cn/question/
-
-### 块级元素、行内元素
-
-#### 块级元素
+### 块级元素
 大多为结构性标记，例如：`<address>,<h1>,<div>,<p>,<table>,<ul>`
 
 1. 总是从新的一行开始
@@ -55,7 +48,7 @@
 3. 宽度没有设置时，默认为100%
 4. 块级元素中可以包含块级元素和行内元素
 
-#### 行内元素
+### 行内元素
 大多为描述性标记，例如：`<span>,<a>,<b>,<input>,<select>`
 
 1. 和其他元素都在一行
@@ -63,11 +56,7 @@
 3. 宽高就是内容的高度，不可以改变
 4. 行内元素只能行内元素，不能包含块级元素
 
-### 盒子模型
-
-### BFC
-
-### 浮动
+## 浮动
 * 浮动元素的外边距不会合并
 * 浮动元素的包含块是其最近的块级祖先元素
 * 浮动元素会生成块级框(即使它本身是行内元素)
@@ -75,8 +64,36 @@
 * 多个浮动元素排起来不能超出父元素宽度(但是单个很宽的浮动元素会超出父元素宽度)
 * 浮动元素的顶端与其所在行之后的行框的顶端对齐
 
-### flex布局
-* https://www.cnblogs.com/xiaobaiv/p/9020335.html
+## flex布局
+* http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html
+* http://www.ruanyifeng.com/blog/2015/07/flex-examples.html
+
+![flex](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/flex.png)
+
+## BFC(Block Formatting Context、块格式化上下文)
+https://zhuanlan.zhihu.com/p/25321647
+https://www.sitepoint.com/understanding-block-formatting-contexts-in-css/
+
+符合一下其中之一，会产生BFC
+
+* float不为none
+* position不是static和relative
+* display值是table-cell,table-caption,inline-block,flex,inline-flex其中之一
+* overflow不是visible
+
+作用
+
+* 阻止margin合并，因为在同一个BFC内的margin会合并，如果不希望合并，把它们分在不同BFC
+* 用BFC包含浮动元素
+* 用BFC阻止文字环绕(浮动元素)
+* 用于多列布局(事实上用flex更好)
+
+## 参考链接汇总
+因为实在太杂太多了。所以放参考记录参考链接方便查水表。先记录一些汇总链接，然后后面补充一些特定主题的。
+
+### 无主题或者杂主题
+* HTML和CSS常见问题整理：https://github.com/yygmind/blog/issues/3
+* 壹题汇总的CSS部分：https://muyiy.cn/question/
 
 ### 面试题
 * https://segmentfault.com/a/1190000013325778?utm_source=tag-newest
