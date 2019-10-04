@@ -70,6 +70,8 @@
 
 ![flex](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/flex.png)
 
+## grid布局
+
 ## BFC(Block Formatting Context、块格式化上下文)
 https://zhuanlan.zhihu.com/p/25321647
 https://www.sitepoint.com/understanding-block-formatting-contexts-in-css/
@@ -88,6 +90,36 @@ https://www.sitepoint.com/understanding-block-formatting-contexts-in-css/
 * 用BFC阻止文字环绕(浮动元素)
 * 用于多列布局(事实上用flex更好)
 
+## 媒体查询
+http://nec.netease.com/framework/css-media.html
+```css
+/* media */
+/* 横屏 */
+@media screen and (orientation:landscape){
+}
+/* 竖屏 */
+@media screen and (orientation:portrait){
+}
+/* 窗口宽度<960,设计宽度=768 */
+@media screen and (max-width:959px){
+}
+/* 窗口宽度<768,设计宽度=640 */
+@media screen and (max-width:767px){
+}
+/* 窗口宽度<640,设计宽度=480 */
+@media screen and (max-width:639px){
+}
+/* 窗口宽度<480,设计宽度=320 */
+@media screen and (max-width:479px){
+}
+/* windows UI 贴靠 */
+@media screen and (-ms-view-state:snapped){
+}
+/* 打印 */
+@media print{
+}
+```
+
 ## 参考链接汇总
 因为实在太杂太多了。所以放参考记录参考链接方便查水表。先记录一些汇总链接，然后后面补充一些特定主题的。
 
@@ -96,5 +128,5 @@ https://www.sitepoint.com/understanding-block-formatting-contexts-in-css/
 * 壹题汇总的CSS部分：https://muyiy.cn/question/
 
 ### 面试题
-* https://segmentfault.com/a/1190000013325778?utm_source=tag-newest
+* https://segmentfault.com/a/1190000013325778
 * https://zhuanlan.zhihu.com/p/66516864
