@@ -1,3 +1,12 @@
+## 数据库范式
+
+https://www.zhihu.com/question/24696366/answer/29189700
+https://www.zhihu.com/question/24696366/answer/29049568
+
+1. 第一范式(1NF)：一范式就是属性不可分割。
+2. 第二范式(2NF)：二范式就是要有主键，要求其他字段都依赖于主键。
+3. 第三范式(3NF)：三范式就是要消除传递依赖，方便理解，可以看做是“消除冗余”，就是各种信息只在一个地方存储，不出现在多张表中。
+
 ## 常用函数
 
 1. substring_index(str,delim,count)
@@ -68,7 +77,6 @@ set num=1;
     end while;
 end
 ```
-
 
 ### 关于SELECT 0
 语句`SELECT 0 AS x, field1 FROM tb`， tb表中是没有`x`这个字段的，但是希望查询结果中有这个字段，所以就通过`SELECT 0 AS x`来添加了，并且结果中的`x`字段会是`0`值。
