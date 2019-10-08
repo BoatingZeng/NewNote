@@ -6,7 +6,7 @@
 * [MongoDB](mongodb)
 * [MySQL](mysql)
 * [nginx](nginx)
-* [es6](es6)
+* [javascript](javascript)
 * [css](css)
 * [vue](vue)
 * [web](web)

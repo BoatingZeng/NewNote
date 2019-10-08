@@ -24,3 +24,11 @@ Cross-site request forgery、跨站请求伪造
 1. 同源验证。阻止来自不可信域名的请求。简单但是并非万无一失。对于在本站发起的攻击，就无法防范。
 2. CSRF Token。这个token不在cookie里发送。可以放在header或者查询参数里。
 3. 双重Cookie验证。前端生成一个随机cookie，向后端请求的时候，在URL查询参数中也带上这个cookie的值，这样后端可以对比cookie中和URL中的值是否一致。这个方法相对简单，但难以做到子域名的隔离（因为前端取cookie是有域名限制的）。
+
+## HTTP1.0、HTTP1.1、HTTP2.0、SPDY
+
+* HTTP1.0虽然有Connection:keep-alive的定义，但是没有标准实现，到了HTTP1.1才有了标准实现并且默认开启
+* SPDY位于HTTP之下，TCP和SSL之上，这样可以轻松兼容老版本的HTTP协议
+* HTTP2基于SPDY，虽然HTTP2不要求https，但实际上都是需要https的
+* nodejs的http2和http模块的api不同，express(版本4.x)不支持nodejs的http2模块，要用spdy
+* koa支持nodejs的http2

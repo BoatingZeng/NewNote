@@ -1,3 +1,29 @@
+## 内存泄漏
+http://point.davidglasser.net/2013/06/27/surprising-javascript-memory-leak.html
+```js
+var theThing = null;
+var replaceThing = function () {
+    var originalThing = theThing;
+    var unused = function () {
+        if (originalThing)
+            console.log("hi");
+    };
+    theThing = {
+        longStr: new Array(100000000).join('*'),
+        someMethod: function () {
+            console.log(1111);
+        } // 没有这个函数的话，也不会导致泄漏
+    };
+    // theThing = null; // 这样可以让上面的对象在函数内部就释放了
+};
+
+setInterval(replaceThing, 100);
+```
+
+在执行函数的时候，如果遇到闭包，会创建闭包作用域内存空间，将该闭包所用到的局部变量添加进去，然后再遇到闭包，会在之前创建好的作用域空间添加此闭包会用到而前闭包没用到的变量。函数结束，清除没有被闭包作用域引用的变量。
+
+在此例中，有两个闭包。第一个unused，引用了origin，如果没有后面的闭包，unused会在函数结束后清除，闭包作用域也跟着清除了，但是因为后面闭包是全局变量，其所引用的闭包作用域一直存在，而这个作用域是包括unused的闭包作用域的（就是同一个函数内部的闭包作用域只有一个，所有闭包共享，第一段说明），所以origin因为在闭包作用域里不会被清除，而随着不断调用，我们很容易发现，origin指向前一次replace函数执行后留下的对象（该对象再通过作用域链指向闭包作用域），从而形成一个链条。造成内存泄漏。
+
 ## let和const
 
 在for里使用let
