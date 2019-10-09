@@ -32,3 +32,89 @@ Cross-site request forgery、跨站请求伪造
 * HTTP2基于SPDY，虽然HTTP2不要求https，但实际上都是需要https的
 * nodejs的http2和http模块的api不同，express(版本4.x)不支持nodejs的http2模块，要用spdy
 * koa支持nodejs的http2
+
+## DOM事件
+![CSS Specifishity](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/dom_event.png)
+
+例子，点击元素#c
+```html
+<ul id="p">
+    <li id="c">1</li>
+    <li>2</li>
+    <li>3</li>
+    <li>4</li>
+</ul>
+```
+
+```js
+let p = document.getElementById('p');
+let c = document.getElementById('c');
+
+// 情况1，因为listener默认在冒泡阶段触发，所以是先c后p
+p.addEventListener('click', function(e){
+    console.log('p');
+    console.log(e.currentTarget);
+    console.log(e.target);
+});
+
+c.addEventListener('click', function(e){
+    console.log('c');
+    console.log(e.currentTarget);
+    console.log(e.target);
+});
+
+// 打印结果，注意顺序
+// c
+// <li id=​"c">​1​</li>​
+// <li id=​"c">​1​</li>​
+// p
+// <ul id=​"p">​…​</ul>​
+// <li id=​"c">​1​</li>​
+
+// currentTarget永远都是绑事件那个元素
+// target是dispatch事件那个，或者说实际被点那个
+
+// 情况2，如果给p添加listen时设定了useCapture为true，那么p的listener在捕获阶段就触发，所以先p后c
+p.addEventListener('click', function(e){
+    console.log('p');
+}, true);
+
+c.addEventListener('click', function(e){
+    console.log('c');
+});
+
+// 结果
+// p
+// c
+
+// 情况3，在上面基础上，p的listener阻止了事件继续传播，所以事件在被p捕获后就没了
+p.addEventListener('click', function(e){
+    console.log('p');
+    e.stopPropagation();
+}, true);
+
+c.addEventListener('click', function(e){
+    console.log('c');
+});
+
+// 结果
+// p
+
+// 情况4，因为默认在冒泡阶段触发listener，所以当在c的listener停止事件传播，事件就冒泡不到p，也就触发不了p的listener，尽管它曾被p捕获过，但是这里捕获阶段不触发listener
+p.addEventListener('click', function(e){
+    console.log('p');
+});
+
+c.addEventListener('click', function(e){
+    console.log('c');
+    e.stopPropagation();
+});
+
+// 结果
+// c
+```
+
+总结
+
+* addEventListener的第三个参数useCapture，指示的是listener在什么阶段触发，true的话就是在捕获阶段触发，默认为false，在冒泡阶段触发。它并不影响事件的传播。
+* stopPropagation是阻止事件的传播，在listener里调用，就是说事件触发了这个listener，调用了stopPropagation，这个事件就没后续了。
