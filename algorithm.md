@@ -1,3 +1,5 @@
+* 别人的一个文档：https://ziyi2.github.io/algorithms/
+
 ## 用与和异或做加法
 ```js
 // 循环版

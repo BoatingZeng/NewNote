@@ -1,3 +1,87 @@
+## Event Loop
+https://juejin.im/post/5c3d8956e51d4511dc72c200
+
+* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、I/O、UI Rendering
+* MicroTask(微任务)：Process.nextTick（Node独有）、Promise、Object.observe(废弃)、MutationObserver
+* async函数底层也是Promise，但是在不同运行环境可能有不同表现，详见下面例子
+
+每次执行完宏任务后，检查微任务队列，把微任务队列里的全部执行。
+
+```js
+console.log('main1');
+
+process.nextTick(function() {
+    console.log('process.nextTick1');
+});
+
+setTimeout(function() {
+    console.log('setTimeout');
+    process.nextTick(function() {
+        console.log('process.nextTick2');
+    });
+}, 0);
+
+new Promise(function(resolve, reject) {
+    console.log('promise'); // new Promise里的那个函数是立刻执行的!
+    resolve();
+}).then(function() {
+    console.log('promise then');
+}).then(function() {
+    console.log('promise then 2'); // 这里会比setTimeout还要早执行，因为上面console.log('promise then');执行完后，这里的回调已经在微任务里了。而同步代码console.log('promise then');本身就是宏任务，宏任务执行完后，又轮到微任务。
+});
+
+console.log('main2');
+// 结果顺序：
+// main1
+// promise
+// main2
+// process.nextTick1
+// promise then
+// promise then 2
+// setTimeout
+// process.nextTick2
+```
+
+```js
+console.log('script start')
+
+async function async1() {
+  await async2()
+  console.log('async1 end')
+}
+async function async2() {
+  console.log('async2 end') 
+}
+async1()
+
+setTimeout(function() {
+  console.log('setTimeout')
+}, 0)
+
+new Promise(resolve => {
+  console.log('Promise')
+  resolve()
+})
+  .then(function() {
+    console.log('promise1')
+  })
+  .then(function() {
+    console.log('promise2')
+  })
+
+console.log('script end')
+
+// 新版v8(chrome77上跑是新的，node10上跑是旧的)结果
+// script start
+// async2 end
+// Promise
+// script end
+// async1 end 如果旧版的话，这里的async1 end会在promise2后面，原因简单来说是await使用了额外的Promise导致它延后
+// promise1
+// promise2
+// setTimeout
+```
+
 ## 内存泄漏
 http://point.davidglasser.net/2013/06/27/surprising-javascript-memory-leak.html
 ```js
