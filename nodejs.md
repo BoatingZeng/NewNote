@@ -523,7 +523,7 @@ Module.prototype._compile = function(content, filename) {
     result = inspectorWrapper(compiledWrapper, this.exports, this.exports,
                               require, this, filename, dirname);
   } else {
-    // 这里解释了为什么模块文件内部有exports、module、_dirname、filename、require这些变量
+    // 这里解释了为什么模块文件内部有exports、module、__dirname、__filename、require这些变量
     // 其实它们都不是全局变量，而是在处理模块文件的时候用compiledWrapper包进去的
     result = compiledWrapper.call(this.exports, this.exports, require, this,
                                   filename, dirname);
