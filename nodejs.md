@@ -365,3 +365,188 @@ process.on( 'message', ( m) => {
 });
 process.send({ foo:  'bar' });
 ```
+
+## 关于require
+`require('a.js')`到底发生了什么？
+
+很明显，解析一个js文件的字符并执行，然后导出一个模块对象，这些操作并非单纯的js代码就可以完成的，它肯定依赖了nodejs底层的某些功能。下面点到即止地从源码上走一下require的过程。(因为不懂nodejs的底层，所以c语言写的那部分，视为大爆炸前的事，归上帝管)
+
+代码是node10.x的源码，是`lib\internal\modules\cjs`目录下的`loader.js`和`helper.js`文件。代码有删减且加了中文注释。被删减的部分有注释提示。
+
+loader.js文件里有Module这个类，它的实例就代表模块本身。
+
+模块里的require函数，其实是Module类的require方法，源码如下。它并非全局函数，之后有详细解释。
+```js
+Module.prototype.require = function(id) {
+  validateString(id, 'id');
+  if (id === '') {
+    throw new ERR_INVALID_ARG_VALUE('id', id,
+                                    'must be a non-empty string');
+  }
+  return Module._load(id, this, /* isMain */ false);
+};
+```
+
+可以看到require主要是调用_load函数，下面再看看_load函数。
+
+```js
+Module._load = function(request, parent, isMain) {
+  if (parent) {
+    debug('Module._load REQUEST %s parent: %s', request, parent.id);
+  }
+  // 先不管它怎么找到目标文件。因为我们探讨的是到底怎么处理被加载的文件，所以之后盯紧这个filename
+  var filename = Module._resolveFilename(request, parent, isMain);
+  // 也不管模块已经被加载过，在cache里的情况
+  var cachedModule = Module._cache[filename];
+  if (cachedModule) {
+    updateChildren(parent, cachedModule, true);
+    return cachedModule.exports;
+  }
+  // 也不管加载的是nodejs内置模块的情况
+  if (NativeModule.nonInternalExists(filename)) {
+    debug('load native module %s', request);
+    return NativeModule.require(filename);
+  }
+
+  // Don't call updateChildren(), Module constructor already does.
+  var module = new Module(filename, parent);
+
+  if (isMain) {
+    process.mainModule = module;
+    module.id = '.';
+  }
+
+  Module._cache[filename] = module;
+
+  tryModuleLoad(module, filename);
+
+  return module.exports;
+};
+
+// 上面用到的tryModuleLoad函数，在loader.js里
+function tryModuleLoad(module, filename) {
+  var threw = true;
+  try {
+    module.load(filename);
+    threw = false;
+  } finally {
+    if (threw) {
+      delete Module._cache[filename];
+    }
+  }
+}
+```
+
+这里new了一个Module出来，代表的是要被加载的模块。然后tryModuleLoad里，这个要被加载的模块调用load函数去读取这个文件。所以接下来看看load函数(注意这个是没有下划线的)。
+
+```js
+Module.prototype.load = function(filename) {
+  debug('load %j for module %j', filename, this.id);
+
+  assert(!this.loaded);
+  this.filename = filename;
+  this.paths = Module._nodeModulePaths(path.dirname(filename));
+  // 这个extension就是文件扩展名，后面会根据不同扩展名调用不同方法，上面讨论的是.js扩展名，所以这里最后调Module._extensions['.js']
+  var extension = findLongestRegisteredExtension(filename);
+  Module._extensions[extension](this, filename);
+  this.loaded = true;
+
+  // 后面的代码跟experimentalModules有关，不管它
+  // 这里删减了代码...
+};
+
+// 上面Module._extensions[extension](this, filename);实际调用的方法
+Module._extensions['.js'] = function(module, filename) {
+  // 这个方法终于是读取文件内容了
+  var content = fs.readFileSync(filename, 'utf8');
+  module._compile(stripBOM(content), filename);
+};
+```
+
+对于.js后缀文件，load函数最终调用`Module._extensions['.js']`。读取文件内容后，处理内容的函数是_compile。所以接下来是_compile函数。
+
+```js
+Module.prototype._compile = function(content, filename) {
+
+  content = stripShebang(content);
+
+  let compiledWrapper;
+  if (patched) {
+    // 不清楚patched什么含义，所以不管这个分支
+    const wrapper = Module.wrap(content);
+    compiledWrapper = vm.runInThisContext(wrapper, {
+      filename,
+      lineOffset: 0,
+      displayErrors: true,
+      importModuleDynamically: experimentalModules ? async (specifier) => {
+        if (asyncESM === undefined) lazyLoadESM();
+        const loader = await asyncESM.loaderPromise;
+        return loader.import(specifier, normalizeReferrerURL(filename));
+      } : undefined,
+    });
+  } else {
+    // compileFunction来自loader.js文件开头的const { compileFunction } = internalBinding('contextify'); 是底层函数，所以没法进一步分析
+    // 不过我们知道返回的compiledWrapper也是一个函数，看看后面实际对compiledWrapper的调用，那里再猜测这个compiledWrapper是一个怎样的函数
+    compiledWrapper = compileFunction(
+      content,
+      filename,
+      0,
+      0,
+      undefined,
+      false,
+      undefined,
+      [],
+      [
+        'exports',
+        'require',
+        'module',
+        '__filename',
+        '__dirname',
+      ]
+    );
+    // 这里的代码跟experimentalModules有关，不管它
+    // 这里删减了代码...
+  }
+
+  var inspectorWrapper = null;
+  // 这里的代码跟inspector有关，不管它
+  // 这里删减了代码...
+
+  var dirname = path.dirname(filename);
+
+  // makeRequireFunction来自helper.js，它就是构造模块里使用的require函数的，看看下面makeRequireFunction的代码
+  var require = makeRequireFunction(this);
+  var depth = requireDepth;
+  if (depth === 0) stat.cache = new Map();
+  var result;
+  if (inspectorWrapper) {
+    result = inspectorWrapper(compiledWrapper, this.exports, this.exports,
+                              require, this, filename, dirname);
+  } else {
+    // 这里解释了为什么模块文件内部有exports、module、_dirname、filename、require这些变量
+    // 其实它们都不是全局变量，而是在处理模块文件的时候用compiledWrapper包进去的
+    result = compiledWrapper.call(this.exports, this.exports, require, this,
+                                  filename, dirname);
+  }
+  if (depth === 0) stat.cache = null;
+  return result;
+};
+
+// 上面用到的makeRequireFunction，在helper.js里
+function makeRequireFunction(mod) {
+  const Module = mod.constructor;
+  // 其实模块里调用的require就是Module自己的require方法
+  function require(path) {
+    try {
+      exports.requireDepth += 1;
+      return mod.require(path);
+    } finally {
+      exports.requireDepth -= 1;
+    }
+  }
+  // 这里删减了代码...
+  return require;
+}
+```
+
+_compile函数会用底层的compileFunction去处理.js文件的文本内容，并且会用compiledWrapper把模块包起来。代码解释到这里结束，之所以说点到为止，是因为compileFunction和compiledWrapper无法单纯地从js的层面去分析了，所以对这两个函数的解释是基于猜测的。compileFunction的代码是在`src\node_contextify.cc`里的`ContextifyContext::CompileFunction`，这里不贴出来。
