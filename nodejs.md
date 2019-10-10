@@ -387,7 +387,7 @@ Module.prototype.require = function(id) {
 };
 ```
 
-可以看到require主要是调用_load函数，下面再看看_load函数。
+可以看到require主要是调用`_load`函数，下面再看看`_load`函数。
 
 ```js
 Module._load = function(request, parent, isMain) {
@@ -463,7 +463,7 @@ Module._extensions['.js'] = function(module, filename) {
 };
 ```
 
-对于.js后缀文件，load函数最终调用`Module._extensions['.js']`。读取文件内容后，处理内容的函数是_compile。所以接下来是_compile函数。
+对于.js后缀文件，load函数最终调用`Module._extensions['.js']`。读取文件内容后，处理内容的函数是`_compile`。所以接下来是`_compile`函数。
 
 ```js
 Module.prototype._compile = function(content, filename) {
@@ -549,4 +549,4 @@ function makeRequireFunction(mod) {
 }
 ```
 
-_compile函数会用底层的compileFunction去处理.js文件的文本内容，并且会用compiledWrapper把模块包起来。代码解释到这里结束，之所以说点到为止，是因为compileFunction和compiledWrapper无法单纯地从js的层面去分析了，所以对这两个函数的解释是基于猜测的。compileFunction的代码是在`src\node_contextify.cc`里的`ContextifyContext::CompileFunction`，这里不贴出来。
+`_compile`函数会用底层的compileFunction去处理.js文件的文本内容，并且会用compiledWrapper把模块包起来。代码解释到这里结束，之所以说点到为止，是因为compileFunction和compiledWrapper无法单纯地从js的层面去分析了，所以对这两个函数的解释是基于猜测的。compileFunction的代码是在`src\node_contextify.cc`里的`ContextifyContext::CompileFunction`，这里不贴出来。
