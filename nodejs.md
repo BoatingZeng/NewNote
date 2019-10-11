@@ -366,6 +366,108 @@ process.on( 'message', ( m) => {
 process.send({ foo:  'bar' });
 ```
 
+## cluster
+这个主题其实是跟子进程主题相关的。不过因为nodejs有一个cluster模块，所以单独出来。
+
+参考：https://www.cnblogs.com/accordion/p/7207740.html
+
+实际监听端口的其实是主进程，子进程的listen不是真正的监听端口。具体过程如下：
+
+1. worker调用listen，告诉master要监听端口并建立调度
+2. master监听端口，并且把worker加进调度里，并且告诉worker完成这步了
+3. worker来一个假的server来让master触发connection
+4. 当有连接来到master时，master通过IPC发到worker，worker处理完后把结果发回给master，master返回给客户端
+
+用于分发请求的Round-Robin调度策略。不是说每个请求轮流分派给每个子进程，而是时间片轮转。这个时间片轮转的意思是，当有请求进来时，找一个空闲的子进程处理它，它处理完这个请求后，如果请求队列里还有请求，就让它紧接着处理下一个，直到请求队列为空，就把子进程标记为空闲(放进空闲队列)。暂时空闲一段时间后，又有请求进来，这时处理请求的空闲进程和上一个就不同了。详细可以看看下面代码的注释。所以现象就是，一段时间内的请求，是子进程A处理的，然后没请求了，空闲一段时间，再来请求，就是子进程B处理。这样做，比起单纯的轮着分派每个请求给不同子进程的做法，有什么优势？
+
+```js
+RoundRobinHandle.prototype.distribute = function(err, handle) {
+  this.handles.push(handle);
+  const worker = this.free.shift(); // 拿队头的进程
+
+  if (worker)
+    this.handoff(worker);
+};
+
+RoundRobinHandle.prototype.handoff = function(worker) {
+  if (this.all.has(worker.id) === false) {
+    return;  // Worker is closing (or has closed) the server.
+  }
+
+  const handle = this.handles.shift();
+
+  if (handle === undefined) {
+    this.free.push(worker);  // 用完后放到队尾，所以下次shift拿的就不是这个了
+    return;
+  }
+
+  const message = { act: 'newconn', key: this.key };
+
+  sendHelper(worker.process, message, handle, (reply) => {
+    if (reply.accepted)
+      handle.close();
+    else
+      this.distribute(0, handle);  // Worker is shutting down. Send to another.
+
+    this.handoff(worker); // 刚才这个worker刚处理完，又会立刻给它下一个请求
+  });
+};
+```
+
+Round-Robin是不适合用在要保持连接的情景的，比如使用socket.io这个库的时候。详细参考：https://www.cnblogs.com/accordion/p/6930152.html
+
+这篇文章指出nodejs的IPC通讯性能有问题，用node10在win10下测试过(代码在下面贴出)，确实用IPC的延迟会一直增长，而用socket的不会。文章链接：https://zhuanlan.zhihu.com/p/27069865
+
+```js
+// master.js
+const child_process = require('child_process');
+
+let child = child_process.fork('./child.js');
+let data = Array(1024 * 1024).fill('0').join('');
+
+setInterval(() => {
+  let i = 100;
+  while(i--) child.send(`${data}|${Date.now()}`);
+}, 1000);
+
+// child.js
+let i = 0;
+
+process.on('message', (str) => {
+  let now = Date.now();
+  let [data, time] = str.split('|')
+  console.log(i++, now - Number(time));
+});
+
+// server.js
+const axon = require('axon'); // 第三方模块
+const sock = axon.socket('push');
+
+sock.bind(3000);
+console.log('push server started');
+let data = Array(1024 * 1024).fill('0').join('');
+
+setInterval(function(){
+  let i = 100;
+  while(i--) sock.send(`${data}|${Date.now()}`);
+}, 1000);
+
+// client.js
+const axon = require('axon');
+const sock = axon.socket('pull');
+
+sock.connect(3000);
+
+let i = 0;
+sock.on('message', function(msg){
+  let now = Date.now();
+  let [data, time] = msg.split('|')
+  console.log(i++, now - Number(time));
+});
+```
+
+
+
 ## 关于require
 `require('a.js')`到底发生了什么？
 
