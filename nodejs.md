@@ -373,43 +373,75 @@ process.send({ foo:  'bar' });
 
 实际监听端口的其实是主进程，子进程的listen不是真正的监听端口。具体过程如下：
 
-1. worker调用listen，告诉master要监听端口并建立调度
-2. master监听端口，并且把worker加进调度里，并且告诉worker完成这步了
-3. worker来一个假的server来让master触发connection
-4. 当有连接来到master时，master通过IPC发到worker，worker处理完后把结果发回给master，master返回给客户端
+1. worker调用server的listen，告诉master要监听端口并建立调度(默认是Round-Robin)
+2. master的server监听端口(server内部有一个叫handle的对象，它是调用底层创建的，是有真正的listen方法的)，并且把worker加进调度里，并且告诉worker完成这步了
+3. worker的server会建立一个假的handle(它有假的listen方法)
+4. 当有连接来到master时，master通过IPC发到worker处理
 
-用于分发请求的Round-Robin调度策略。不是说每个请求轮流分派给每个子进程，而是时间片轮转。这个时间片轮转的意思是，当有请求进来时，找一个空闲的子进程处理它，它处理完这个请求后，如果请求队列里还有请求，就让它紧接着处理下一个，直到请求队列为空，就把子进程标记为空闲(放进空闲队列)。暂时空闲一段时间后，又有请求进来，这时处理请求的空闲进程和上一个就不同了。详细可以看看下面代码的注释。所以现象就是，一段时间内的请求，是子进程A处理的，然后没请求了，空闲一段时间，再来请求，就是子进程B处理。这样做，比起单纯的轮着分派每个请求给不同子进程的做法，有什么优势？
+第4步的具体细节，要看看`process`对象的`send`方法`process.send(message[, sendHandle[, options]][, callback])`，这里注意第二个参数`sendHandle`，它是`<net.Server>|<net.Socket>`。另外看`round_robin_handle.js`的代码(在下面贴出)的`this.handle.onconnection`部分，`onconnection`最终收到的`handle`，会经过IPC传到子进程，所以子进程的`message`事件里收到的`sendHandle`对象，就是这个底层传过来的`handle`，子进程可以用它处理这个连接。~~之前有一个错误的认知。以为master和worker只是通过message通讯，master把要处理的东西通过message发到worker，然后worker把处理结果通过message发回给master，master再发会给client。这是错的！~~
+
+下面在注释里简单说明Round-Robin的过程。按代码顺序看就是过程的顺序了。
 
 ```js
+// lib\internal\cluster\round_robin_handle.js
+function RoundRobinHandle(key, address, port, addressType, fd) {
+  this.key = key;
+  this.all = new Map();
+  this.free = [];
+  this.handles = [];
+  this.handle = null;
+  this.server = net.createServer(assert.fail);
+
+  if (fd >= 0)
+    this.server.listen({ fd });
+  else if (port >= 0)
+    this.server.listen(port, address);
+  else
+    this.server.listen(address);  // UNIX socket path.
+
+  this.server.once('listening', () => {
+    this.handle = this.server._handle;
+    // 这里的onconnection是底层代码的回调函数，这里的handle代表了这个连接
+    // 有连接来就调distribute方法并且把handle传进去
+    this.handle.onconnection = (err, handle) => this.distribute(err, handle);
+    this.server._handle = null;
+    this.server = null;
+  });
+}
+// 每次调distribute会把一个handle放到待处理队列，并且让一个空闲worker进入到工作状态
 RoundRobinHandle.prototype.distribute = function(err, handle) {
+  // 无论怎样，先把这个handle放发哦待处理队列
   this.handles.push(handle);
   const worker = this.free.shift(); // 拿队头的进程
-
+  // 如果有空闲worker，就让它工作
   if (worker)
     this.handoff(worker);
 };
-
+// 每handoff一次分派一个handle给一个worker处理
 RoundRobinHandle.prototype.handoff = function(worker) {
   if (this.all.has(worker.id) === false) {
     return;  // Worker is closing (or has closed) the server.
   }
-
+  // 从队列里取一个要处理的
   const handle = this.handles.shift();
 
   if (handle === undefined) {
-    this.free.push(worker);  // 用完后放到队尾，所以下次shift拿的就不是这个了
+    this.free.push(worker);  // 如果待处理队列空，那这个worker就先回到空闲状态
     return;
   }
 
   const message = { act: 'newconn', key: this.key };
 
+  // master把这个handle发给worker处理，worker收到就会再回一个消息，不管这个连接是否处理完的
   sendHelper(worker.process, message, handle, (reply) => {
     if (reply.accepted)
+      // 反正worker接收了，master就不管这个handle了
       handle.close();
     else
+      // 如果worker没回复说接收了，就把这个handle放回到待处理队列。事实上，只要worker活着，worker一收到newconn信息，就会立刻回复已接收的
       this.distribute(0, handle);  // Worker is shutting down. Send to another.
 
-    this.handoff(worker); // 刚才这个worker刚处理完，又会立刻给它下一个请求
+    this.handoff(worker); // 刚才这个worker刚处理完，又会立刻给它下一个请求，所以handles队列为空之前，这个worker都不会闲下来的
   });
 };
 ```
@@ -465,8 +497,6 @@ sock.on('message', function(msg){
   console.log(i++, now - Number(time));
 });
 ```
-
-
 
 ## 关于require
 `require('a.js')`到底发生了什么？
