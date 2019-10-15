@@ -118,3 +118,12 @@ c.addEventListener('click', function(e){
 
 * addEventListener的第三个参数useCapture，指示的是listener在什么阶段触发，true的话就是在捕获阶段触发，默认为false，在冒泡阶段触发。它并不影响事件的传播。
 * stopPropagation是阻止事件的传播，在listener里调用，就是说事件触发了这个listener，调用了stopPropagation，这个事件就没后续了。
+
+## Service Worker
+* 完整的参考实例：https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers
+* 另外也可以参考docsify库使用的sw.js文件：https://docsify.js.org/#/pwa
+
+* 主要用与缓存资源。还可以在浏览器端客制化请求。
+* 生产环境只支持https。本地开发localhost不要求https。
+* 更新过sw代码后，刷新或者载入页面会安装(install)新的sw，但是不会激活(active)，要等到所有使用旧版sw的页面都关闭后，才会激活新的。
+* fetch后的response要clone一份存入cache，原本那份给浏览器，因为response只能读取一次。

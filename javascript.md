@@ -878,3 +878,89 @@ prototype(Child, Parent);
 
 var child1 = new Child('kevin', '18');
 ```
+
+## Promise
+
+### 关于then和catch的分析
+
+* 每次then或者catch，都会产生一个新的Promise
+* 在同一条链上的Promise，如果前面有rejected，后面就都rejected的
+* Promise链是可以分支的，而且要在每个分支的末端catch好，否则可能会有错误抛出到外面
+* catch里如果抛出错误，那么这个catch后产生的Promise是rejected的，否则是resolved的。所以原则上catch里不能抛出错误，否则就无止境了。
+* 如果没有特殊需求，一般来说都不去分支Promise，一条链比较直观，然后最末端catch。像下面的分支示例就比较迷惑人了。
+
+```js
+var p = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    reject(new Error('error'));
+  }, 1000);
+});
+
+// 下面p1和p2是两个不同分支了
+var p1 = p.then(v => {
+  console.log(v);
+  return 'p1 then';
+});
+
+var p2 = p.catch(e => {
+  console.error('catch p', e); // catch p Error: error
+  return 'p2 then';
+});
+
+// 因为p本身是rejected的，所以p1分支的末尾要catch
+p1.catch(e => {
+  console.error('catch p1', e); // catch p1 Error: error
+});
+
+// 这里then之后又从p2分了一个分支
+p2.then(v => {
+  console.log('v in p2：', v); // v in p2： p2 then 说明catch后也是返回一个Promise，如果catch的回调里没有抛出错误，它就resolved了
+}).catch(e => {
+  console.error('catch in p2 then：', e); // 走不到这里，因为前面没有未catch错误。但是这里是应该catch的，因为是分支末端。
+});
+
+// 因为catch之后还是返回Promise的，所以理论上也是可以继续catch，详细看下一个例子
+p2.catch(e => {
+  console.error('catch p2', e); // 走不到这里，因为p里的错误已经被catch过而且p2分支里也没出现错误
+});
+
+console.log(p1); // PromiseStatus: rejected; PromiseValue: Error: error
+console.log(p2); // PromiseStatus: resolved; PromiseValue: p2 then
+```
+
+```js
+var p = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    reject(new Error('error'));
+  }, 1000);
+});
+
+var p1 = p.then(v => {
+  console.log(v);
+  return 'p1 then';
+});
+
+// 这里catch后又抛出错误，导致p2后的分支都是rejected的
+var p2 = p.catch(e => {
+  console.error('catch p', e); // catch p Error: error
+  throw new Error('throw in p2'); // 这会导致p2 reject
+});
+
+p1.catch(e => {
+  console.error('catch p1', e); // catch p1 Error: error
+});
+
+p2.then(v => {
+  console.log('v in p2：', v); // 走不到这里
+}).catch(e => {
+  console.error('catch in p2 then：', e); // catch in p2 then： Error: throw in p2 因为p2是rejected的，所以这里也要catch
+});
+
+// 这里就是刚catch过又catch的情况，没完没了，因为之前的catch里抛出了错误
+p2.catch(e => {
+  console.error('catch p2', e); // catch p2 Error: throw in p2
+});
+
+console.log(p1); // PromiseStatus: rejected; PromiseValue: Error: error
+console.log(p2); // PromiseStatus: rejected; PromiseValue: Error: throw in p2
+```
