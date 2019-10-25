@@ -126,6 +126,50 @@ new Vue({
 </html>
 ```
 
+## Prop
+注意，用prop给子组件的data赋初值后，改变prop，子组件里被赋值的那个data不会跟着变。下面的例子里，点击按钮后，fromParent会变new message，但是子组件里的localMessage不会变。
+```html
+<template id="childTemplate">
+  <div>
+    <div>fromParent：{{fromParent}}</div>
+    <div>localMessage：{{localMessage}}</div>
+  </div>
+</template>
+
+<div id="app">
+  <div>message：{{message}}</div>
+  <div>子</div>
+  <child :from-parent="message"></child>
+  <button @click="test">改变父message</button>
+</div>
+
+<script>
+let Child = Vue.component('child', {
+  props: ['fromParent'],
+  data() {
+    return {
+      localMessage: this.fromParent
+    }
+  },
+  template: '#childTemplate'
+})
+
+new Vue({
+  el: '#app',
+  data(){
+    return {
+      message: 'old message'
+    }
+  },
+  methods: {
+    test() {
+      this.message = 'new message';
+    }
+  },
+})
+</script>
+```
+
 ## 面试题中关于vue的
 
 ### 写React/Vue项目时为什么要在列表组件中写key，其作用是什么？

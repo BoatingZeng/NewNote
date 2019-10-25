@@ -1,7 +1,7 @@
 ## Event Loop
 https://juejin.im/post/5c3d8956e51d4511dc72c200
 
-* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、I/O、UI Rendering
+* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、I/O、UI Rendering、MessageChannel
 * MicroTask(微任务)：Process.nextTick（Node独有）、Promise、Object.observe(废弃)、MutationObserver
 * async函数底层也是Promise，但是在不同运行环境可能有不同表现，详见下面例子
 
