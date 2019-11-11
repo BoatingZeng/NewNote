@@ -770,3 +770,8 @@ exports.b2 = function () {
 /***/ }
 /******/ ]);
 ```
+
+### loader
+https://webpack.js.org/api/loaders/
+
+loader就是读取文件之后，经过一系列处理，最终给编译器返回一个String或者Buffer(最终也转成String)。loader可同步也可异步。对于一个读取代码的loader，从结果来看，实际上很简单，就是读取源文件，然后生成一个用于页面的代码字符串，这个字符串最终是页面模块(函数)的内容。
