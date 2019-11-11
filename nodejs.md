@@ -682,3 +682,91 @@ function makeRequireFunction(mod) {
 ```
 
 `_compile`函数会用底层的compileFunction去处理.js文件的文本内容，并且会用compiledWrapper把模块包起来。代码解释到这里结束，之所以说点到为止，是因为compileFunction和compiledWrapper无法单纯地从js的层面去分析了，所以对这两个函数的解释是基于猜测的。compileFunction的代码是在`src\node_contextify.cc`里的`ContextifyContext::CompileFunction`，这里不贴出来。
+
+## webpack
+
+### 打包简例
+主要看看bundle.js的注释
+
+源文件和配置
+```js
+// webpack.config.js
+module.exports = {
+  entry:'./a.js',
+  output:{
+    filename:'bundle.js'
+  }
+};
+
+// a.js
+var b = require('./b.js');
+
+console.log('a');
+
+b.b1();
+
+// b.js
+exports.b1 = function () {
+  console.log('b1')
+};
+
+exports.b2 = function () {
+  console.log('b2')
+};
+```
+
+结果
+```js
+// bundle.js
+/******/ (function(modules) { // webpackBootstrap
+/******/    // The module cache
+/******/    var installedModules = {};
+/******/    // The require function
+/******/    function __webpack_require__(moduleId) {
+/******/        // Check if module is in cache
+/******/        if(installedModules[moduleId])
+/******/            return installedModules[moduleId].exports;
+/******/        // Create a new module (and put it into the cache)
+                // 这个module对象的结构，也是和Node.js的module的结构一样的，忽略id和loaded属性，主要是module.exports
+/******/        var module = installedModules[moduleId] = {
+/******/            exports: {},
+/******/            id: moduleId,
+/******/            loaded: false
+/******/        };
+/******/        // Execute the module function。看看这里的传参和下面的模块1。
+/******/        modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/        // Flag the module as loaded
+/******/        module.loaded = true;
+/******/        // Return the exports of the module
+/******/        return module.exports;
+/******/    }
+/******/    // expose the modules object (__webpack_modules__)
+/******/    __webpack_require__.m = modules;
+/******/    // expose the module cache
+/******/    __webpack_require__.c = installedModules;
+/******/    // __webpack_public_path__
+/******/    __webpack_require__.p = "";
+/******/    // Load entry module and return exports
+/******/    return __webpack_require__(0);
+/******/ })
+/************************************************************************/
+/**下面就是模块数组或者对象，每个模块都是一个函数，调用的时候把module, exports, __webpack_require__什么的传进去。对比之前对Node.js的require的分析，其实很像的。**/
+/******/ ([
+/* 0 */
+/***/ function(module, exports, __webpack_require__) {
+    var b = __webpack_require__(1);
+    console.log('a');
+    b.b1();
+/***/ },
+/* 1 模块1*/
+/***/ function(module, exports) {
+    // 这里module、module.exports、exports这些变量，就和Node.js的结构一致。所以写webpack模块的时候，就跟写普通Node.js模块一样。
+    exports.b1 = function () {
+      console.log('b1')
+    };
+    exports.b2 = function () {
+      console.log('b2')
+    };
+/***/ }
+/******/ ]);
+```
