@@ -84,6 +84,53 @@ end
 具体例子：http://stackoverflow.com/questions/13219472/why-SELECT-0-instead-of-SELECT
 。这个例子是为了确认`B`表中到底有没有`a=1`和`a=2`的行。
 
+### ORDER BY
+* 对于InnoDB：https://segmentfault.com/a/1190000015987895
+
+1. where和order by使用的索引不同时，只能用其中一个
+2. 如果不用where，查了排序字段和主键之外的字段，那还是可能发生filesort
+3. 如果对排序字段用where，比如限制个范围，如果范围比较大，那还是可能发生filesort
+
+实例：
+```sql
+-- 表结构
+CREATE TABLE `t_test` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) DEFAULT NULL,
+  `idx1` int(10) unsigned NOT NULL,
+  `idx2` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `i1` (`idx1`),
+  KEY `i2` (`idx2`)
+) ENGINE=InnoDB AUTO_INCREMENT=18500 DEFAULT CHARSET=utf8;
+
+-- 存储过程，插10w条数据。测试时太慢，插了20620条就放弃了
+CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_test`()
+BEGIN
+	DECLARE v INT DEFAULT 1;
+    WHILE v<100000
+		DO
+        INSERT INTO t_test VALUES(v,v,v,v);
+        SET v=v+1;
+	END WHILE;
+END
+
+-- 对应上面几种情况的查询
+
+-- 情况1
+select * from t_test where idx1 < 500 order by idx2 desc; -- where和order by所用索引不同，filesort
+
+-- 情况2
+select * from t_test order by idx1 desc; -- filesort
+select idx1, id from t_test order by idx1 desc; -- 只查主键和排序索引，不用filesort
+select idx1, id, idx2 from t_test order by idx1 desc; -- filesort，即使全是索引
+
+-- 情况3
+select idx1 from t_test where idx1 > 500 order by idx1 desc; -- 范围很大，但是因为只查了索引字段，不用filesort，这个其实跟情况2的没where只查索引差不多
+select * from t_test where idx1 > 500 order by idx1 desc; -- 范围很大，用filesort
+select * from t_test where idx1 < 500 order by idx1 desc; -- 范围很小，不用filesort
+```
+
 ## 例子
 
 ### 例1
