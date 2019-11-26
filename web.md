@@ -134,3 +134,7 @@ Service Worker是一种特殊的Web Worker
 * 生产环境只支持https。本地开发localhost不要求https。
 * 更新过sw代码后，刷新或者载入页面会安装(install)新的sw，但是不会激活(active)，要等到所有使用旧版sw的页面都关闭后，才会激活新的。
 * fetch后的response要clone一份存入cache，原本那份给浏览器，因为response只能读取一次。
+
+## WebSocket
+
+* ping、pong心跳，目前，浏览器中没有相关api发送ping给服务器，只能由服务器发ping给浏览器，浏览器(自动)返回pong消息。ping、pong和message是分开的，所以onmessage里是不会收到ping、pong信息的。
