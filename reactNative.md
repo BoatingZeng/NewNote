@@ -368,3 +368,89 @@ const Bulb = requireNativeComponent('Bulb');
 
 <Bulb isOn={true} onStatusChange={e => console.log(e.nativeEvent)}/>
 ```
+
+## Headless JS
+
+### 简单实例
+经测试(测试是在debug模式下进行)，下面这个例子，只有app开着的时候，service会运作(打印)，待机或者把app丢到后台都不会运作。待机后解锁，进入app，它会接着之前的状态运行。如果把app关了，再进去，也不会接着运作。
+
+```java
+// MyTaskService.java
+package com.rntest2;
+
+import android.content.Intent;
+import android.os.Bundle;
+import com.facebook.react.HeadlessJsTaskService;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.jstasks.HeadlessJsTaskConfig;
+import javax.annotation.Nullable;
+
+public class MyTaskService extends HeadlessJsTaskService {
+  @Override
+  protected @Nullable HeadlessJsTaskConfig getTaskConfig(Intent intent) {
+    Bundle extras = intent.getExtras();
+    if (extras != null) {
+      return new HeadlessJsTaskConfig(
+          "SomeTaskName",
+          Arguments.fromBundle(extras),
+          5000, // timeout for the task
+          true // 这里需要让service在前台运行，因为例子里是用按钮主动触发的
+        );
+    }
+    return null;
+  }
+}
+```
+
+```java
+// 找个原生模块方法，主动触发这个service
+@ReactMethod
+public void startService() {
+    Intent service = new Intent(reactContext, MyTaskService.class);
+    Bundle bundle = new Bundle();
+
+    bundle.putString("foo", "bar"); // 传入参数，{"foo": "bar"}
+    service.putExtras(bundle);
+
+    reactContext.startService(service);
+}
+```
+
+```xml
+<!-- AndroidManifest.xml 里添加，service是application的子元素 -->
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+
+<service android:name="com.rntest2.MyTaskService" />
+```
+
+```js
+// HeadLess.js
+// 这个就是要运行的js代码
+module.exports = async (taskData) => {
+  console.log('headless start');
+  function sleep(){
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        console.log('sleep');
+        console.log(taskData); // 这里打印{"foo": "bar"}
+        resolve();
+      }, 5000);
+    });
+  }
+  for (let i = 0; i < 5; i++) {
+    await sleep();
+  }
+  console.log('headless end');
+};
+```
+
+```js
+// index.js
+// react native 程序的entry
+import {AppRegistry} from 'react-native';
+import App from './App';
+import {name as appName} from './app.json';
+
+AppRegistry.registerComponent(appName, () => App);
+AppRegistry.registerHeadlessTask('SomeTaskName', () => require('./Headless'));
+```
