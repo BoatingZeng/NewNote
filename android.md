@@ -193,3 +193,153 @@ public void onCreate() {
 ```
 
 ### 远程服务
+https://www.jb51.net/article/158224.htm
+https://www.cnblogs.com/demodashi/p/8481566.html
+https://blog.csdn.net/luoyanglizi/article/details/51594016
+
+#### aidl实现
+注意下面的代码涉及到两个app，不过代码基本一样。一个的包名是com.rntest(提供服务的app)、另一个是com.rntest3。
+
+提供服务的app，创建aidl文件，并且make一下project让as生成接口文件(aidl本质上就是这个接口的模板)。想使用这个服务的app，也要把这个文件，连同目录(包)复制到自己工程的aidl目录下，并且make project。aidl文件如下：
+
+```java
+// IProcessInfo.aidl
+package com.rntest;
+interface IProcessInfo {
+    void basicTypes(int anInt, long aLong, boolean aBoolean, float aFloat,
+            double aDouble, String aString);
+    int getProcessId();
+}
+```
+
+实现上面这个接口。下面的这个getProcessId方法，主要是为了观察进程。
+```java
+package com.rntest;
+
+import android.os.Process;
+import android.os.RemoteException;
+import android.util.Log;
+
+public class IProcessInfoImpl extends IProcessInfo.Stub {
+    @Override
+    public int getProcessId() throws RemoteException {
+        Log.d("TestRemoteService", "IProcessInfoImpl.java pid = " + Process.myPid());
+        Log.d("TestRemoteService", "IProcessInfoImpl.java thread id = " + Thread.currentThread().getId());
+        return Process.myPid();
+    }
+
+    public void basicTypes(int anInt, long aLong, boolean aBoolean, float aFloat,
+                          double aDouble, String aString) throws RemoteException {
+
+    }
+}
+```
+
+创建service
+```java
+package com.rntest;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
+import android.os.Process;
+
+import androidx.annotation.Nullable;
+
+public class MyRemoteService extends Service {
+    IProcessInfoImpl mProcessInfo = new IProcessInfoImpl();
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.d("TestRemoteService", "MyRemoteService.java pid = " + Process.myPid());
+        Log.d("TestRemoteService", "MyRemoteService.java thread id = " + Thread.currentThread().getId());
+        return mProcessInfo;
+    }
+}
+```
+
+在AndroidManifest.xml注册这个service。因为要供外部调用，所以设置intent-filter
+```xml
+<service
+    android:name=".MyRemoteService"
+    android:process=":remote" >
+    <intent-filter>
+        <action android:name="com.rntest.service.bind" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </intent-filter>
+</service>
+```
+
+调用service。
+```java
+// 创建ServiceConnection
+private ServiceConnection mRemoteServiceConnection = new ServiceConnection() {
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+
+        Log.d("TestRemoteService", "MyRemoteService onServiceConnected");
+        // 通过aidl取出数据
+        IProcessInfo processInfo = IProcessInfo.Stub.asInterface(service);
+        try {
+            Log.d("TestRemoteService", "SimpleModule.java from service pid = " + processInfo.getProcessId());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+        Log.d("TestRemoteService", "MyRemoteService onServiceDisconnected");
+    }
+};
+
+// 提供服务的app，可以直接通过class调用。
+@ReactMethod
+public void aidlTest() {
+    Intent intent = new Intent(reactContext, MyRemoteService.class);
+    reactContext.bindService(intent, mRemoteServiceConnection, BIND_AUTO_CREATE);
+}
+
+// 其他app，通过action调用
+@ReactMethod
+public void aidlTest() {
+    Intent intent = new Intent();
+    intent.setAction("com.rntest.service.bind");//Service的action
+    intent.setPackage("com.rntest");//App A的包名
+    reactContext.bindService(intent, mRemoteServiceConnection, BIND_AUTO_CREATE);
+}
+
+// 用于观察app所在进程
+@ReactMethod
+public void doNothing() {
+    Log.d("TestRemoteService", "doNothing pid = " + Process.myPid());
+    Log.d("TestRemoteService", "doNothing thread id = " + Thread.currentThread().getId());
+}
+```
+
+测试过程，两个app都打开，都调用doNothing和aidlTest。下面是logcat打印结果，只取重要(pid)部分。
+```log
+<!--  分别在两个app调用doNothing，打印他们的pid -->
+com.rntest D/TestRemoteService: doNothing pid = 31487
+com.rntest3 D/TestRemoteService: doNothing pid = 31007
+
+<!-- 在com.rntest3调用aidlTest -->
+com.rntest:remote D/TestRemoteService: MyRemoteService.java pid = 31580
+com.rntest:remote D/TestRemoteService: IProcessInfoImpl.java pid = 31580
+com.rntest3 D/TestRemoteService: SimpleModule.java from service pid = 31580
+
+<!-- 在com.rntest调用aidlTest -->
+com.rntest:remote D/TestRemoteService: MyRemoteService.java pid = 31580
+com.rntest:remote D/TestRemoteService: IProcessInfoImpl.java pid = 31580
+com.rntest D/TestRemoteService: SimpleModule.java from service pid = 31580
+```
+
+下面是开启`adb shell`后，执行`top | grep com.rntest`的结果：
+```log
+31487 u0_a272      10 -10 1.2G 140M 100M S 11.1   3.6   0:11.87 com.rntest
+31580 u0_a272      20   0 1.0G  66M  51M S  0.0   1.7   0:00.92 com.rntest:remote
+31007 u0_a273      20   0 1.2G 137M  99M S  0.0   3.5   0:11.91 com.rntest3
+```
+
+结论：服务在一个独立的进程里开启，名字叫com.rntest:remote，而且不只自己所在app可以调用，其他app也可以调用。
