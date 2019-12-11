@@ -343,3 +343,120 @@ com.rntest D/TestRemoteService: SimpleModule.java from service pid = 31580
 ```
 
 结论：服务在一个独立的进程里开启，名字叫com.rntest:remote，而且不只自己所在app可以调用，其他app也可以调用。
+
+#### Messenger实现
+
+提供服务的app
+```java
+// MessengerService.java
+public class MessengerService extends Service {
+    static final String TAG = "MessengerServiceTest";
+    static final int MSG_SAY_HELLO = 1;
+
+    class ServiceHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            Log.i(TAG, "MessengerService.java msg.what = " + msg.what);
+            switch (msg.what) {
+                case MSG_SAY_HELLO:
+                    Messenger messenger = msg.replyTo;
+                    if(messenger != null) {
+                        Message messg = Message.obtain(null, MSG_SAY_HELLO);
+                        try {
+                            //向客户端发送消息
+                            messenger.send(messg);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+    }
+
+    final Messenger mMessenger = new Messenger(new ServiceHandler());
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.d(TAG, "MessengerService.java onBind pid = " + Process.myPid());
+        return mMessenger.getBinder();
+    }
+}
+```
+
+提供服务的app注册这个service
+```xml
+<service
+    android:name=".MessengerService"
+    android:process=":messenger" >
+    <intent-filter>
+        <action android:name="com.rntest.service.messanger" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </intent-filter>
+</service>
+```
+
+其他app只要通过对应的intent调用上面的服务就行。
+```java
+// 绑定并且收发信息
+
+//向Service发送消息所用
+private Messenger mService = null;
+//接收Service的回复所用
+private Messenger mMessenger = null;
+private boolean mBound;
+
+private ServiceConnection mConnection = new ServiceConnection() {
+    public void onServiceConnected(ComponentName className, IBinder service) {
+        //接收onBind()传回来的IBinder，并用它构造Messenger
+        Log.d(TAG, "connected");
+        mService = new Messenger(service);
+        mBound = true;
+    }
+
+    public void onServiceDisconnected(ComponentName className) {
+        Log.d(TAG, "disconnected");
+        mService = null;
+        mBound = false;
+    }
+};
+
+@ReactMethod
+public void messengerBind() {
+    if(mMessenger == null) {
+        // 在ReactContextBaseJavaModule类里创建handler，会报Can't create handler inside thread that has not called Looper.prepare()，所以把handler放到方法里创建
+        Handler mHandler = new Handler() {
+            public void handleMessage(android.os.Message msg) {
+                switch (msg.what) {
+                    case MSG_SAY_HELLO:
+                        Log.i(TAG,"SimpleModule.java receive msg.what = " + msg.what);
+                        break;
+                    default:
+                        break;
+                }
+            };
+        };
+        mMessenger = new Messenger(mHandler);
+    }
+
+    Log.d(TAG, "SimpleModule.java pid = " + Process.myPid());
+    Intent intent = new Intent();
+    intent.setAction("com.rntest.service.messanger");
+    intent.setPackage("com.rntest");
+    reactContext.bindService(intent, mConnection, BIND_AUTO_CREATE);
+}
+
+@ReactMethod
+public void sendMessage() {
+    if(mService == null) return;
+    Message msg = Message.obtain(null, MSG_SAY_HELLO);
+    msg.replyTo = mMessenger;    try {        //发送消息
+        mService.send(msg);
+    } catch (RemoteException e) {
+        e.printStackTrace();
+    }
+}
+```
