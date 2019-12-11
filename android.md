@@ -1,4 +1,7 @@
 ## Service
+* 查看服务状态(adb shell内执行)：dumpsys activity services com.rntest.MyRemoteService
+
+那些在后台的服务，即使已经销毁(也就是上面命令已经找不到该服务)，但是通过top命令，还是会看到那个进程依然存在，不过是处于睡眠状态。
 
 ### 简单的Service实例
 
@@ -453,7 +456,8 @@ public void messengerBind() {
 public void sendMessage() {
     if(mService == null) return;
     Message msg = Message.obtain(null, MSG_SAY_HELLO);
-    msg.replyTo = mMessenger;    try {        //发送消息
+    msg.replyTo = mMessenger;    
+    try {        //发送消息
         mService.send(msg);
     } catch (RemoteException e) {
         e.printStackTrace();
