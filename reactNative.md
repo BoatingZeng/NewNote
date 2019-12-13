@@ -209,6 +209,59 @@ eventEmitter.addListener('MyEvent', (event) => {
 ToastExample.testEvent();
 ```
 
+### ReactMethod的线程问
+正如react-native官方文档所说，如果要执行耗时任务，应该开启一个工作线程去执行。下面做一个简单测试。
+
+创建两个ReactContextBaseJavaModule，包含以下方法。
+```java
+@ReactMethod
+public void threadInfo() {
+    Log.d("threadTest", "threadInfo myTid = " + Process.myTid());
+    Log.d("threadTest", "threadInfo getId = " + Thread.currentThread().getId());
+    Log.d("threadTest", "threadInfo getName = " + Thread.currentThread().getName()); // 线程名：mqt_native_modules
+}
+
+// 这两个方法是一样的，都是执行耗时任务
+@ReactMethod
+public void longMethod1(){
+    Log.w("threadTest", "longMethod1 start");
+    Log.d("threadTest", "longMethod1 myTid = " + Process.myTid());
+    Log.d("threadTest", "longMethod1 getId = " + Thread.currentThread().getId());
+    for(int i=0; i<5; i++){
+        Log.d("threadTest", "longMethod1");
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    Log.w("threadTest", "longMethod1 end");
+}
+
+@ReactMethod
+public void longMethod2(){
+    Log.w("threadTest", "longMethod2 start");
+    Log.d("threadTest", "longMethod2 myTid = " + Process.myTid());
+    Log.d("threadTest", "longMethod2 getId = " + Thread.currentThread().getId());
+    for(int i=0; i<5; i++){
+        Log.d("threadTest", "longMethod2");
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    Log.w("threadTest", "longMethod2 end");
+}
+```
+
+调用这些方法，有如下结论：
+
+* 不同的ReactContextBaseJavaModule的方法，是在同一个线程里运行的
+* 在一个耗时任务运行时，调用其他方法，后调用的方法会等到前面的方法返回才执行
+* 用按钮调用耗时任务，会发现，UI上，要等到耗时任务执行完毕(返回)，按钮的按下动画才会触发
+* `adb shell ps -T <进程ID>`查看线程信息，可以找到线程名为`mqt_native_modules`的线程。而且它不是主线程。主线程名在这个命令里看，是包名，在程序里打印，则为main。
+
 ## 原生UI组件
 * https://hackernoon.com/react-native-bridge-for-android-and-ios-ui-component-782cb4c0217d
 
