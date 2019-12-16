@@ -1,3 +1,26 @@
+## 坑
+
+### FLAG_ACTIVITY_NEW_TASK
+在`ReactContextBaseJavaModule`的`ReactMethod`里打开新的Activity。
+
+```java
+// 只是单纯的打开新的Activity
+Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+intent.addCategory(Intent.CATEGORY_OPENABLE);
+intent.setType("image/*");
+intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // 因为不是在Activity里打开，所以要设置这个FLAG
+reactContext.startActivity(intent);
+```
+
+```java
+// 用startActivityForResult打开，这里如果设置FLAG_ACTIVITY_NEW_TASK，新打开的这个Activity立刻就会返回RESULT_CANCELED
+int READ_REQUEST_CODE = 42;
+Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+intent.addCategory(Intent.CATEGORY_OPENABLE);
+intent.setType("image/*");
+reactContext.startActivityForResult(intent, READ_REQUEST_CODE, null);
+```
+
 ## 组件
 
 ### Image
@@ -257,10 +280,13 @@ public void longMethod2(){
 
 调用这些方法，有如下结论：
 
-* 不同的ReactContextBaseJavaModule的方法，是在同一个线程里运行的
+* 不同的ReactContextBaseJavaModule的(@ReactMethod)方法，是在同一个线程(`mqt_native_modules`)里运行的
 * 在一个耗时任务运行时，调用其他方法，后调用的方法会等到前面的方法返回才执行
 * 用按钮调用耗时任务，会发现，UI上，要等到耗时任务执行完毕(返回)，按钮的按下动画才会触发
 * `adb shell ps -T <进程ID>`查看线程信息，可以找到线程名为`mqt_native_modules`的线程。而且它不是主线程。主线程名在这个命令里看，是包名，在程序里打印，则为main。
+
+其他参考
+* https://zhuanlan.zhihu.com/p/45836822
 
 ## 原生UI组件
 * https://hackernoon.com/react-native-bridge-for-android-and-ios-ui-component-782cb4c0217d

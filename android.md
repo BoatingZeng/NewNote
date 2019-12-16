@@ -1,3 +1,25 @@
+## Activity
+
+### onActivityResult
+在react-native的`ReactContextBaseJavaModule`中，可以通过`BaseActivityEventListener`来监听`onActivityResult`。
+
+```java
+// 在ReactContextBaseJavaModule内
+private static ReactApplicationContext reactContext;
+private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
+    @Override
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        // 这里第一个参数activity，就是接收Result的Activity，一般就是public class MainActivity extends ReactActivity。因为这里的onActivityResult其实是收到Activity的一个转发，Activity的onActivityResult方法是没这个参数的。
+    }
+};
+
+SimpleModule(ReactApplicationContext context) {
+    super(context);
+    reactContext = context;
+    reactContext.addActivityEventListener(mActivityEventListener);
+}
+```
+
 ## Service
 * 查看服务状态(adb shell内执行)：dumpsys activity services com.rntest.MyRemoteService
 
@@ -430,7 +452,7 @@ private ServiceConnection mConnection = new ServiceConnection() {
 @ReactMethod
 public void messengerBind() {
     if(mMessenger == null) {
-        // 在ReactContextBaseJavaModule类里创建handler，会报Can't create handler inside thread that has not called Looper.prepare()，所以把handler放到方法里创建
+        // 在ReactContextBaseJavaModule类里创建handler，会报Can't create handler inside thread that has not called Looper.prepare()，所以把handler放到方法里创建。因为ReactContextBaseJavaModule是在一个临时的线程里创建的，创建之后这个线程就不存在了。而ReactMethod是在线程mqt_native_modules里运行的。
         Handler mHandler = new Handler() {
             public void handleMessage(android.os.Message msg) {
                 switch (msg.what) {
