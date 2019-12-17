@@ -34,6 +34,9 @@ https://www.hangge.com/blog/cache/detail_1542.html
 
 ## 原生模块
 
+### 注意
+* 在js端调用@ReactMethod方法，参数类型和数量要和JAVA那端一致。
+
 ### 简单实例
 下面是构造一个原生模块的最简单代码。
 
