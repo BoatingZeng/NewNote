@@ -33,6 +33,7 @@ https://www.hangge.com/blog/cache/detail_1542.html
 * 没有原生的placeholder功能，所以要自己代码实现。
 
 ## 原生模块
+别人打包好的原生模块，npm或者yarn安装好，记录到package.json，gradle sync的时候，会读取package.json，把原生模块的包添加到PackageList.java里。这个是新版(0.60后)react-native的功能。[详情](https://github.com/react-native-community/cli/blob/master/docs/autolinking.md)
 
 ### 注意
 * 在js端调用@ReactMethod方法，参数类型和数量要和JAVA那端一致。
@@ -535,4 +536,88 @@ import {name as appName} from './app.json';
 
 AppRegistry.registerComponent(appName, () => App);
 AppRegistry.registerHeadlessTask('SomeTaskName', () => require('./Headless'));
+```
+
+## 第三方库
+
+### react-native-sqlite-storage
+文档不清晰(根本找不到文档)。下面列出用例。
+
+```js
+// 要在react-native环境下用，不过这里只写出主要代码
+import SQLiteStorage from 'react-native-sqlite-storage';
+SQLiteStorage.DEBUG(true);
+
+var database_name = 'test.db'; //数据库文件，看react-native-sqlite-storage的openDatabase这个函数，这里也就这个参数是用了的
+var database_version = '1.0';
+var database_displayname = 'MySQLite';
+var database_size = -1;
+var db = null;
+
+// 打开数据库
+db = SQLiteStorage.openDatabase(
+                database_name,
+                database_version,
+                database_displayname,
+                database_size,
+                ()=>{
+                    this._successCB('open');
+                },
+                (err)=>{
+                    this._errorCB('open',err);
+                });
+
+// 执行操作，可以用db.transaction或者直接db.executeSql
+
+// 创建用户表
+// 注意executeSql和transaction的成功回调和错误回调的顺序
+db.transaction((tx)=> {
+    tx.executeSql('CREATE TABLE IF NOT EXISTS USER(' +
+        'id INTEGER PRIMARY KEY  AUTOINCREMENT,' +
+        'name varchar,' +
+        'age VARCHAR,' +
+        'sex VARCHAR,' +
+        'phone VARCHAR,' +
+        'email VARCHAR,' +
+        'qq VARCHAR)'
+        , [], ()=> {
+            // executeSql的成功回调
+        }, (err)=> {
+            // executeSql的错误回调
+        });
+}, (err)=> {
+    // transaction的错误回调
+}, ()=> {
+    // transaction的成功回调
+});
+
+// 插入数据
+// 这里的userData是个数组，下面是在一个事务里插入多条记录
+let len = userData.length;
+db.transaction((tx)=>{
+    for (let i = 0; i < len; i++){
+        let user = userData[i];
+        let {name, age, sex, phone, email, qq} = user;
+        let sql = 'INSERT INTO user(name,age,sex,phone,email,qq)' + 'values(?,?,?,?,?,?)';
+        tx.executeSql(sql, [name,age,sex,phone,email,qq]); // 这里executeSql不设置回调也行
+    }
+}, (err)=>{
+    // transaction的错误回调
+}, ()=>{
+    // transaction的成功回调
+});
+
+// 查询数据
+db.executeSql('select * from user', [], (results) => {
+    var len = results.rows.length;
+    for (let i = 0; i < len; i++){
+        var u = results.rows.item(i); // item是个函数
+        console.log(u);
+    }
+}, (err) => {
+    console.error(err);
+});
+
+// 关闭数据库
+db.close();
 ```

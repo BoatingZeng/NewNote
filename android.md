@@ -495,15 +495,15 @@ public void sendMessage() {
 ```java
 @ReactMethod
 public void fileTest() {
-    // 因为这里是在@ReactMethod里的，所以有reactContext和reactContext.getCurrentActivity()，具体参数的类型，请查看原文档
+    // 因为这里是在@ReactMethod里的，所以有reactContext和getCurrentActivity()，具体参数的类型，请查看原文档
     if(ContextCompat.checkSelfPermission(reactContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
         // 没有授权，要询问
-        if (ActivityCompat.shouldShowRequestPermissionRationale(reactContext.getCurrentActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(getCurrentActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             Toast.makeText(reactContext, "需要储存卡写入权限", Toast.LENGTH_SHORT).show();
             // 文档解释：shouldShowRequestPermissionRationale()。如果用户之前拒绝了该请求，该方法将返回 true；如果用户之前拒绝了某项权限并且选中了权限请求对话框中的不再询问选项，或者如果设备政策禁止该权限，该方法将返回 false。
         }
         // 如果用户拒绝了，并且勾选了不再询问，即使调用requestPermissions，也是不会再弹出授权询问框的。
-        ActivityCompat.requestPermissions(reactContext.getCurrentActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 233);
+        ActivityCompat.requestPermissions(getCurrentActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 233);
     } else {
         // 已授权，正常执行操作
     }
