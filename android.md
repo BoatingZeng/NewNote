@@ -487,6 +487,60 @@ public void sendMessage() {
 }
 ```
 
+## BroadcastReceiver
+```java
+// 定义BroadcastReceiver类
+public class MyBroadcastReceiver extends BroadcastReceiver{
+    @Override
+    public void onReceive(Context context, Intent intent) {}
+}
+
+// 下面这些代码都再Activity里
+// 全局广播
+// 动态注册
+myReceiver = new MyBroadcastReceiver();
+IntentFilter itFilter = new IntentFilter();
+itFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+registerReceiver(myReceiver, itFilter);
+
+// 取消广播
+unregisterReceiver(myReceiver);
+
+// 发送广播
+sendBroadcast(new Intent("com.example.broadcasttest.MY_BROADCAST"));
+
+// 本地广播，本地广播只能动态注册
+// 本地广播注册
+localBroadcastManager = LocalBroadcastManager.getInstance(this);
+localReceiver = new MyBroadcastReceiver();
+intentFilter = new IntentFilter();
+intentFilter.addAction("com.example.broadcasttest.MY_BROADCAST");
+localBroadcastManager.registerReceiver(localReceiver, intentFilter);
+
+// 取消广播
+localBroadcastManager.unregisterReceiver(localReceiver);
+
+// 发送广播
+Intent intent = new Intent("com.jay.mybcreceiver.LOGIN_OTHER");
+localBroadcastManager.sendBroadcast(intent);
+```
+```xml
+<!-- 静态注册。这里注册的是开机事件，是系统广播，所以要权限。 -->
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+<receiver android:name=".BootCompleteReceiver">
+    <intent-filter>
+        <action android:name = "android.intent.cation.BOOT_COMPLETED">
+    </intent-filter>
+</receiver>
+
+<!-- 这个是自定义广播 -->
+<receiver android:name=".MyBroadcastReceiver">
+    <intent-filter>
+        <action android:name="com.example.broadcasttest.MY_BROADCAST"/>
+    </intent-filter>
+</receiver>
+```
+
 ## 权限
 安卓6.0以上的权限控制。很多app在第一次打开的时候，就会询问各种权限，一开始就获取，免得日后用的时候再问，也是种方便的办法。下面是询问写入SD卡的权限的示例。
 
