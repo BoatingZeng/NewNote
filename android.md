@@ -567,3 +567,5 @@ public void fileTest() {
 @Override
 public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {}
 ```
+
+react-native有[PermissionsAndroid](https://facebook.github.io/react-native/docs/permissionsandroid#requestmultiple)工具，可以在js端调用然后发起权限询问。**坑。**如果重写了`ReactActivity`的`onRequestPermissionsResult`，记得调用父类的方法，不然`PermissionsAndroid.request`返回的Promise就没下文了，因为react-native是在这个方法里通知到js那边的。骂了半天辣鸡react-native结果是自己的错，**重写方法记得调用父类方法**。
