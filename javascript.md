@@ -21,13 +21,22 @@ setTimeout(function() {
     });
 }, 0);
 
+// 这个Promise一开始执行后，微任务队列就一直不空，所以上面的setTimeout会在promise then 4后打印
 new Promise(function(resolve, reject) {
-    console.log('promise'); // new Promise里的那个函数是立刻执行的!
+    console.log('promise'); // new Promise里的那个函数是立刻执行的!所以它比main2还早打印。
     resolve();
 }).then(function() {
     console.log('promise then');
+    new Promise(function(resolve, reject) {
+        console.log('promise 3');
+        resolve('value');
+    }).then(function(v){
+        console.log('promise then 3 ' + v); // 会比promise then 2先执行
+    }).then(function(){
+      console.log('promise then 4 '); // 这个会比promise then 2迟，但是比setTimeout早
+    });
 }).then(function() {
-    console.log('promise then 2'); // 这里会比setTimeout还要早执行，因为上面console.log('promise then');执行完后，这里的回调已经在微任务里了。而同步代码console.log('promise then');本身就是宏任务，宏任务执行完后，又轮到微任务。
+    console.log('promise then 2'); // 这里会比setTimeout还要早执行
 });
 
 console.log('main2');
@@ -37,7 +46,10 @@ console.log('main2');
 // main2
 // process.nextTick1
 // promise then
+// promise 3
+// promise then 3 value
 // promise then 2
+// promise then 4
 // setTimeout
 // process.nextTick2
 ```

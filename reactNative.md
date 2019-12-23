@@ -621,3 +621,6 @@ db.executeSql('select * from user', [], (results) => {
 // 关闭数据库
 db.close();
 ```
+
+### react-native-camera
+* https://react-native-community.github.io/react-native-camera/docs/rncamera
