@@ -145,6 +145,7 @@ let只能出现在当前作用域的顶层。这个规则适用于function声明
 
 ```js
 // 报错。没有大括号，所以不存在块级作用域，let只能出现在当前作用域的顶层
+// SyntaxError: Lexical declaration cannot appear in a single-statement context
 if (true) let x = 1;
 
 // 不报错
@@ -158,7 +159,7 @@ if (true) {
   function f() {}
 }
 
-// 报错
+// 报错 SyntaxError: In strict mode code, functions can only be declared at top level or inside a block.
 'use strict';
 if (true) function f() {}
 ```
@@ -343,6 +344,14 @@ function foo(x, y = function() { x = 2; }) {
 }
 foo() // 2
 x // 1
+
+function foo(x, y = function() { x = 2;}) {}
+// 相当于
+{
+  let x;
+  let y = function() { x = 2;};
+  function foo() {// 这里可以访问x和y};
+}
 ```
 
 ### rest参数
@@ -369,11 +378,31 @@ const sortNumbers = (...numbers) => numbers.sort();
 ### 箭头函数
 要注意的问题
 
+* 函数体内的this对象，就是定义时所在的对象，而不是使用时所在的对象。
 ```js
 const cat = {
   lives: 9,
   jumps: () => {
     this.lives--; // 这里this是指向全局，所以箭头函数不要作为对象的方法
+  }
+}
+
+// 在class里
+class Cat{
+  lives = 9;
+
+  jumps = () => {
+    this.lives--; // 这里let c = new Cat之后，c.jumps()里的this却是c本身。
+  }
+}
+
+Cat.prototype.jumps; // undefined 惊了，jumps不在prototype里
+// 详细解释：https://javascriptweblog.wordpress.com/2015/11/02/of-classes-and-arrow-functions-a-cautionary-tale/
+// 这里这个jumps，并不是类的方法，而是每个实例自己的属性，相当于下面这种写法
+function Cat() {
+  this.lives = 9;
+  this.jumps = () => {
+    this.lives--;
   }
 }
 
@@ -634,13 +663,10 @@ class Point {
 }
 
 // 等同于
-function Point(){};
+function Point(){this.x = 0};
 Point.st() = function(){}; // 实例没有这个方法，无法正常继承
-Point.prototype = {
-  constructor() {this.x = 0},
-  toString() {},
-  toValue() {},
-};
+Point.prototype.toString = function() {};
+Point.prototype.toValue = function() {};
 ```
 
 **class定义的方法是不可枚举的，但是ES5通过prototype定义的是可枚举的。**可以利用
