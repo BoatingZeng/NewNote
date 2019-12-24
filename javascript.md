@@ -379,6 +379,7 @@ const sortNumbers = (...numbers) => numbers.sort();
 要注意的问题
 
 * 函数体内的this对象，就是定义时所在的对象，而不是使用时所在的对象。
+
 ```js
 const cat = {
   lives: 9,
