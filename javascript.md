@@ -452,6 +452,8 @@ undefined in emp // false
 4. Object.getOwnPropertySymbols(obj)：返回一个数组，包含对象自身的所有 Symbol 属性的键名。
 5. Reflect.ownKeys(obj)：返回一个数组，包含对象自身的所有键名，不管键名是 Symbol 或字符串，也不管是否可枚举。
 
+注：属性的是否可枚举，是可以设定的。比如数组的`length`就是不可枚举属性。给一个对象直接用点运算符赋值的是可枚举，`defineProperties`定义的属性默认不可枚举。
+
 ### 扩展运算符(...)
 用于取出参数对象的所有可遍历属性，拷贝到当前对象之中
 
@@ -501,12 +503,23 @@ iframe.contentWindow.Symbol.for('foo') === Symbol.for('foo') // true
 ## Proxy
 用途：对象监听。比起definePropety的setter和getter，Proxy可以拦截关键字或者运算符还有函数等的默认行为。而且不用一个个属性通过definePropety定义，而是可以通过统一的handler拦截。
 
-set和get这两个拦截器的receiver参数，一般情况都不用，主要是在当对象的属性不是正常访问和设置时使用。(正常访问和设置，一般就是通过点运算符来访问和设置)
+set和get这两个拦截器的receiver参数，一般情况都不用，主要是在当对象的属性不是正常访问和设置时使用。(正常访问和设置，一般就是通过点运算符来访问和设置)。见下面例子。
+
+```js
+var proxy = new Proxy({}, {
+  get: function(target, property, receiver) {
+    return receiver; // 访问什么属性都是获得这个receiver
+  }
+});
+proxy.getReceiver === proxy; // true
+var inherits = Object.create(proxy);
+inherits.getReceiver === inherits; // true
+```
 
 https://github.com/mqyqingfeng/Blog/issues/107
 
 ## Reflect
-是个对象，不是函数。其方法和Proxy的方法一一对应。
+是个对象，不是函数,包含13个静态方法。其方法和Proxy的方法一一对应。其实就是个函数库。
 
 ## Iterator和for...of
 有Symbol.iterator属性的对象，就是可遍历的(可for..of)
@@ -634,9 +647,7 @@ function run(gen){
   function next(data){
     var result = g.next(data);
     if (result.done) return result.value;
-    result.value.then(function(data){
-      next(data);
-    });
+    result.value.then(next);
   }
 
   next();
@@ -670,7 +681,7 @@ Point.prototype.toString = function() {};
 Point.prototype.toValue = function() {};
 ```
 
-**class定义的方法是不可枚举的，但是ES5通过prototype定义的是可枚举的。**可以利用
+**class定义的方法是不可枚举的，但是ES5通过prototype用点运算符定义的是可枚举的。**
 
 ```js
 class Point {
@@ -686,6 +697,13 @@ Point.prototype.toString = function() {};
 
 Object.keys(Point.prototype)// ["toString"]
 Object.getOwnPropertyNames(Point.prototype)// ["constructor","toString"]
+
+// 用defineProperties定义的话，默认就不可枚举了。
+Object.defineProperties(Point.prototype, {
+    toString: {
+        value: function() {}
+    }
+});
 ```
 
 ### new.target关键字
@@ -799,7 +817,7 @@ class B extends A {
 let b = new B();
 ```
 
-### 类的prototype属性和__proto__属性
+### 类的`prototype`属性和`__proto__`属性
 
 ```js
 class A {
@@ -848,18 +866,16 @@ function B(){}
 var F = function(){};
 
 F.prototype = A.prototype
-B.prototype = new F();
+B.prototype = new F(); // 这里没有保证B.prototype的constructor属性
 Object.setPrototypeOf(B, A);
 
 B.prototype.__proto__ === A.prototype // true
-B.__proto__ === A // true
-B.__proto__ === Function.prototype // true
-```
+B.__proto__ === A // true 因为Object.setPrototypeOf(B, A);
+A.__proto__ === Function.prototype // true
 
-作为一个对象，子类（B）的原型（__proto__属性）是父类（A）；作为一个构造函数，子类（B）的原型对象（prototype属性）是父类的原型对象（prototype属性）的实例。
+// 作为一个对象，子类（B）的原型（__proto__属性）是父类（A）；作为一个构造函数，子类（B）的原型对象（prototype属性）是父类的原型对象（prototype属性）的实例。
 
-实例的__proto__就是类的prototype
-```js
+// 实例的__proto__就是类的prototype
 let a = new A();
 let b = new B();
 
@@ -870,11 +886,11 @@ b.__proto__.__proto__ === a.__proto__ // true
 
 ### Babel编译Class
 
-1. ES6里Class的方法在prototype里是不可枚举的，Babel实现了这个特性，利用defineProperty设置enumerable为false。
+1. ES6里Class的方法在`prototype`里是不可枚举的，Babel实现了这个特性，利用`defineProperty`设置`enumerable`为`false`。
 2. ES6静态方法，ES5直接挂在构造函数上。Babel也是这样做。
 3. 静态属性和静态方法类似。
 4. ES6的class必须要用new来调用。Babel也实现了这点，通过`this instanceof Constructor`检查当前对象是不是构造函数的实例来判断是不是通过new调用。
-5. Babel通过寄生组合式继承来实现。注意子类的prototype的constructor属性，要指向子类；注意子类的__proto__是父类；注意子类的prototype.__proto是父类prototype。
+5. Babel通过寄生组合式继承来实现。注意子类的`prototype`的`constructor`属性，要指向子类；注意子类的`__proto__`是父类；注意子类的`prototype.__proto__`是父类`prototype`。
 
 ```js
 // ES6继承
@@ -959,7 +975,7 @@ p2.then(v => {
   console.error('catch in p2 then：', e); // 走不到这里，因为前面没有未catch错误。但是这里是应该catch的，因为是分支末端。
 });
 
-// 因为catch之后还是返回Promise的，所以理论上也是可以继续catch，详细看下一个例子
+// 因为catch之后还是返回Promise的，所以理论上也是可以继续catch(因为上面p2.then后面catch过，所以这个p2.catch是没必要的，如果上面p2.then后面没有catch，那这里是有必要的)，详细看下一个例子
 p2.catch(e => {
   console.error('catch p2', e); // 走不到这里，因为p里的错误已经被catch过而且p2分支里也没出现错误
 });
@@ -996,7 +1012,7 @@ p2.then(v => {
   console.error('catch in p2 then：', e); // catch in p2 then： Error: throw in p2 因为p2是rejected的，所以这里也要catch
 });
 
-// 这里就是刚catch过又catch的情况，没完没了，因为之前的catch里抛出了错误
+// 这里就是刚catch过又catch的情况，没完没了，因为之前的p.catch里抛出了错误(因为上面p2.then后面catch过，所以这个p2.catch是没必要的，如果上面p2.then后面没有catch，那这里是有必要的)
 p2.catch(e => {
   console.error('catch p2', e); // catch p2 Error: throw in p2
 });
