@@ -92,12 +92,12 @@ render: h => h(App)
         所以用的时候，插入到默认slot最好还是写在一起，避免迷惑。因为在组件里他们是在一起的。
       </div>
       <template v-slot:slot_3="slotProps">
-        <!-- 通过slotProps访问子组件的user，用的时导出时的别名outuser -->
+        <!-- 通过slotProps访问子组件的user，用的是导出时的别名outuser -->
         <div>{{ slotProps.outuser.firstName }}</div>
       </template>
       <!-- 下面是2.6.0之后被废弃的语法 -->
       <template slot="slot_4" slot-scope="slotProps">
-        <div>{{ d.outuser.firstName }}</div>
+        <div>{{ slotProps.outuser.firstName }}</div>
       </template>
     </child>
   </div>
@@ -302,12 +302,14 @@ console.log(`英雄初始类型：${hero.type}`)
 hero.health = 5000
 ```
 
-优化版
+面向对象版
 ```js
 class Dep {
   constructor () {
     this.deps = []
   }
+
+  static target = null;
 
   depend () {
     if (Dep.target && this.deps.indexOf(Dep.target) === -1) {
@@ -321,8 +323,6 @@ class Dep {
     })
   }
 }
-
-Dep.target = null
 
 class Observable {
   constructor (obj) {
@@ -476,6 +476,6 @@ https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/90
 https://github.com/Advanced-Frontend/Daily-Interview-Question/issues/145
 
 * vue没有做事件代理。
-* 事件代理的一个好处是方便添加和去除事件，但是vue帮你做了。
+* 事件代理的一个好处是方便添加和去除事件，但是vue帮你做了(添加和去除事件这个操作)。
 * 关于性能，列表里的不同listener实际上用的是同一个函数。除非列表真的很大(或者客户端性能很差)，否则不需要事件代理。
 
