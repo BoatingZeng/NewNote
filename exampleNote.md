@@ -21,10 +21,10 @@ console.log(global.b);
 ```
 
 ## nodejs里的exports和module.exports
-exports是module.exports的一个引用(short cut)。最终导出的是module.exports。所以如果只是改变了exports的指向，其实并没有改变module.exports。
+exports是module.exports的一个引用(short cut)。最终导出的是module.exports。所以如果只是改变了exports的指向，其实并没有改变module.exports。另外，在代码最外层打印this，指的也是最初的(最初的意思是，module.exports在代码中可能中途指向了其他对象)module.exports。详细参考nodejs笔记里的require部分。
 
 ## Object.create()和Object.setPrototypeOf()
-这两个方法都会让目标对象的__proto__指向指定的对象。
+这两个方法都会让目标对象的`__proto__`指向指定的对象。
 
 ```js
 const person = {
@@ -40,7 +40,7 @@ me.__proto__ === person // true
 
 const you = {};
 
-Object.setPrototypeOf(me, person);
+Object.setPrototypeOf(you, person);
 
 you.__proto__ === person; // true
 ```
