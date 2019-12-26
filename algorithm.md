@@ -67,6 +67,7 @@ function bubbleSort(arr) {
 function quickSort(arr) {
   // 交换
   function swap(arr, a, b) {
+      if(a === b) return;
       var temp = arr[a];
       arr[a] = arr[b];
       arr[b] = temp;
@@ -75,24 +76,20 @@ function quickSort(arr) {
   // 分区
   function partition(arr, left, right) {
       /**
-       * 开始时不知最终pivot的存放位置，可以先将pivot交换到后面去
        * 这里用数组中间的元素为基准
        */
       var pivotIndex = Math.floor((right-left) / 2+left);
       var pivot = arr[pivotIndex];
       /**
-       * 存放小于pivot的元素时，是紧挨着上一元素的，否则空隙里存放的可能是大于pivot的元素，
-       * 故声明一个storeIndex变量，并初始化为left来依次紧挨着存放小于pivot的元素。
+       * 这个循环，就是通过交换，
+       * 把小于pivot的(较小数)都放到数组前面部分，
+       * 这里道理很简单，因为只要保证较小数都在前面，那较大数自然就都在后面，所以只需关注较小数
+       * storeIndex表示下一个准备放较小数的位置，
+       * 注意i<=right，因为pivot是中间的一个量，所以整个区间都要历遍
        */
       var storeIndex = left;
       for (var i = left; i <= right; i++) {
-          // 注意i<=right，因为pivot是中间的一个量，所以整个区间都要历遍
           if (arr[i] < pivot) {
-              /**
-               * 遍历数组，找到小于的pivot的元素，（大于pivot的元素会跳过）
-               * 将循环i次时得到的元素，通过swap交换放到storeIndex处，
-               * 并对storeIndex递增1，表示下一个可能要交换的位置
-               */
               swap(arr, storeIndex, i);
               if(pivotIndex == storeIndex) pivotIndex = i; // 如果原本的pivot和某个元素交换了，要记得pivot交换后的位置
               storeIndex++;
@@ -100,15 +97,15 @@ function quickSort(arr) {
       }
       // 最后： 将pivot交换到storeIndex处，基准元素放置到最终正确位置上
       swap(arr, pivotIndex, storeIndex);
-      return storeIndex;
+      return storeIndex; // 要返回基准值的位置，用于分成前后两部分
   }
 
   function sort(arr, left, right) {
       if (left >= right) return; // 相等，表示区间长度为1。大于，是因为上一次拿到的值刚好是区间最值，导致分割后少了一个区间
 
-      var storeIndex = partition(arr, left, right);
-      sort(arr, left, storeIndex - 1);
-      sort(arr, storeIndex + 1, right);
+      var divideIndex = partition(arr, left, right);
+      sort(arr, left, divideIndex - 1);
+      sort(arr, divideIndex + 1, right);
   }
 
   sort(arr, 0, arr.length - 1);
