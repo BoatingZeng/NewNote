@@ -16,6 +16,7 @@ https://www.freebuf.com/articles/web/185654.html
 
 ## CSRF
 Cross-site request forgery、跨站请求伪造
+https://www.freebuf.com/articles/web/186880.html
 
 概念：攻击者诱导受害者进入第三方网站，在第三方网站中，向被攻击网站发送跨站请求。利用受害者在被攻击网站已经获取的注册凭证，绕过后台的用户验证，达到冒充用户对被攻击的网站执行某项操作的目的。通常是用了受害者的cookie。
 
