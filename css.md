@@ -125,6 +125,21 @@ http://nec.netease.com/framework/css-media.html
 }
 ```
 
+## viewport
+通俗来说，就是拿个放大镜(手机)去看电脑浏览器上的网页。参考：https://www.cnblogs.com/xiaocaiyuxiaoniao/p/8084707.html
+
+```html
+<!-- 一般都这样设置，这样其实就是layout viewport和visual viewport都和设备屏幕一样大 -->
+<!-- 也就是放大镜缩放比例是1，而且电脑浏览器的大小和你放大镜镜片大小一样 -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+```
+
+* layout viewport：就是放置网页的假想空间。
+* visual viewport：理解成一个投影层，它把layout viewport的一部分投影到设备屏幕，它越大，它所投影的layout viewport范围就越大(也就是网页被展示的范围越大，直观上看，就是看到的字更小，因为屏幕大小是不变的)。
+* 设备屏幕：就是实际展示画面的地方。
+* width：layout viewport的宽度。
+* initial-scale：直观上理解，就是内容的缩放比例，值越大，内容就越大。实际上，它其实等于(设备屏幕大小/visual viewport大小)，而设备的大小是不变的，scale越大，visual viewport越小。
+
 ## 参考链接汇总
 因为实在太杂太多了。所以放参考记录参考链接方便查水表。先记录一些汇总链接，然后后面补充一些特定主题的。
 

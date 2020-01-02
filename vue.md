@@ -170,6 +170,81 @@ new Vue({
 </script>
 ```
 
+## 组件的name作用
+https://www.jb51.net/article/140702.htm
+
+1. keep-alive要求被切换到的组件都有自己的名字，不论是通过组件的name选项还是局部/全局注册
+2. 组件递归时通过name调用
+3. 用vue-tools时显示组件名字
+
+## 给data里添加属性
+给data添加原本没有的属性的方法。注意，根属性是不可以再添加的，实际上，访问一个原本不存在的根属性，本身就会报warning，而且原则上，也没有要这样做的理由。
+```js
+data(){
+  return {
+      a1: {} // 原本a1里没有b1属性
+  }
+},
+methods: {
+  test1() {
+      this.a1.b1 = 'a1.b1 test1'; // 无效
+  },
+  test2() {
+      this.a1 = {b1: 'a1.b1 test2'}; // 有效，直接替换a1
+  },
+  test3() {
+      this.$set(this.a1, 'b1', 'a1.b1 test3'); // 有效
+  }
+}
+```
+
+## v-model
+```html
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <title>vue v-model test</title>
+    <template id="appTemplate">
+        <div>
+            <div>a2(根属性)：{{a2}}</div>
+            <div>a1.b2(原本不存在)：{{a1.b2}}</div>
+            <div>a1.b3(原本存在)：{{a1.b3}}</div>
+            a2(v-model)：<input v-model="a2">
+            a2(自定)：<input :value="a2" @input="a2 = $event.target.value">
+            a1.b2(v-model)：<input v-model="a1.b2">
+            a1.b2(自定)：<input :value="a1.b2" @input="$set(a1, 'b2', $event.target.value)">
+            a1.b3(v-model)：<input v-model="a1.b3">
+            a1.b3(自定)：<input :value="a1.b3" @input="a1.b3 = $event.target.value">
+        </div>
+    </template>
+    <script src="vue.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+    new Vue({
+      el: '#app',
+      data(){
+        return {
+            a1: {b3: ''},
+            a2: ''
+        }
+      },
+      template: '#appTemplate'
+    })
+    </script>
+  </body>
+</html>
+```
+
+上面例子里，`a1.b2`和`a1.b3`的两个自定input，都可以正常运作，但实际上，vue的v-model生成的是`$set(a1, 'b2', $event.target.value)`这种形式(具体可以查看源码的`genAssignmentCode`函数)。这里之所以可以正常运作，是因为`a1.b3`这个属性是一开始已经定义的，所以直接用`=`赋值没有问题。
+
+参考(深入的部分，要理解vue的编译才能看懂)：https://www.jianshu.com/p/8e2b5e04a1f7
+
+## vue的编译
+待填坑
+
 ## 面试题中关于vue的
 
 ### 写React/Vue项目时为什么要在列表组件中写key，其作用是什么？

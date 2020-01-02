@@ -139,3 +139,7 @@ Service Worker是一种特殊的Web Worker
 ## WebSocket
 
 * ping、pong心跳，目前，浏览器中没有相关api发送ping给服务器，只能由服务器发ping给浏览器，浏览器(自动)返回pong消息。ping、pong和message是分开的，所以onmessage里是不会收到ping、pong信息的。
+
+## http缓存
+* 缓存机制解释：https://www.cnblogs.com/echolun/p/9419517.html
+* 静态资源部署：https://github.com/fouber/blog/issues/6
