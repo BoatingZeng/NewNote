@@ -873,6 +873,10 @@ B.prototype.__proto__ === A.prototype // true
 B.__proto__ === A // true 因为Object.setPrototypeOf(B, A);
 A.__proto__ === Function.prototype // true
 
+// 原生类Array为例
+Array.prototype.__proto__ === Object.prototype // true
+Array.__proto__ === Function.prototype // true 任何一个没修改过__proto__的函数，都是Function的实例
+
 // 作为一个对象，子类（B）的原型（__proto__属性）是父类（A）；作为一个构造函数，子类（B）的原型对象（prototype属性）是父类的原型对象（prototype属性）的实例。
 
 // 实例的__proto__就是类的prototype
