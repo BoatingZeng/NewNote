@@ -243,7 +243,148 @@ methods: {
 参考(深入的部分，要理解vue的编译才能看懂)：https://www.jianshu.com/p/8e2b5e04a1f7
 
 ## vue的编译
-待填坑
+
+### 前置知识
+* js里，可以通过`new Function()`从字符串中创建一个函数，这意味着可以创建源码中未定义的函数。
+* vue里，模板里的字符串，最终是被创建成render函数的。
+* AST(抽象语法树)。
+
+### 参考
+* https://segmentfault.com/a/1190000012922342
+
+### 举例说明
+因为这个话题涉及的东西比较多，先从一些简单例子开始。
+
+**例1**
+```html
+<template id="appTemplate">
+    <div>
+        <button @click="console.log(1)">test</button>
+    </div>
+</template>
+```
+1. 上面这个模板，被编译成怎样的render函数？
+2. `@click`里的这个`console.log(1)`怎样最终变成这个button的click的listener的？
+
+下面的过程边对源码断点边观察。
+
+找到源码里`createCompileToFunctionFn`函数
+```js
+function createCompileToFunctionFn (compile) {
+    var cache = Object.create(null);
+
+    return function compileToFunctions (
+      template,
+      options,
+      vm
+    ) {
+      options = extend({}, options);
+      var warn$$1 = options.warn || warn;
+      delete options.warn;
+// 省略很多代码
+      // compile
+      var compiled = compile(template, options);
+// 省略很多代码
+      res.render = createFunction(compiled.render, fnGenErrors);
+// 省略很多代码
+    }
+}
+```
+
+关注里面的`compileToFunctions`这个函数，在这个函数里断点，观察`template`参数，在这个例子里，`template`的值就是上面的模板(不含template标签)字符串。
+
+断点观察`compiled`的值(这里先不讨论编译过程)，它有一个`render`属性，是个字符串，值如下：
+```js
+`with(this){return _c('div',[_c('button',{on:{"click":function($event){return console.log(1)}}},[_v("test")])])}`
+```
+它是个函数体，而且就是render函数的函数体，另外可以看到我们定义的click的listener也在里面了。从前面的参考文档得知，里面几个函数的含义如下：
+
+* _c：对应的是`createElement`方法，顾名思义，它的含义是创建一个元素(Vnode)
+* _v：创建一个文本结点。
+* _s：把一个值转换为字符串。(eg: {{data}})
+* _m：渲染静态内容
+
+上面的这个`render`字符串会被传到`createFunction`里，通过`new Function()`创建一个render函数，这就是上面定义的模板生成的渲染函数。可以通过debugger查看到这个函数的内容，会在(伪)文件VMxxxx(xxxx是数字)里，函数如下：
+```js
+(function anonymous(
+) {
+with(this){return _c('div',[_c('button',{on:{"click":function($event){return console.log(1)}}},[_v("test")])])}
+})
+```
+
+问题1结束，接下来是问题2。
+
+找到`updateDOMListeners`函数
+```js
+function updateDOMListeners (oldVnode, vnode) {
+    if (isUndef(oldVnode.data.on) && isUndef(vnode.data.on)) {
+      return
+    }
+    var on = vnode.data.on || {};
+    var oldOn = oldVnode.data.on || {};
+    target$1 = vnode.elm; // 这个target$1是个在外层定义的临时变量，指向这个等着添加listener的元素
+    normalizeEvents(on);
+    updateListeners(on, oldOn, add$1, remove$2, createOnceHandler$1, vnode.context);
+    target$1 = undefined;
+}
+```
+
+注意这里的`vnode`参数，它就是`createElement`的返回值，断点关注它的两个属性。一个是`elm`，它就是`<button>`这个元素，可以看到此时它的`onclick`属性还是`null`。另一个是`data.on`，它是个函数，而且就是上面提及的VMxxxx里的代码里的click属性所指的函数。
+
+找到`updateListeners`函数
+```js
+function updateListeners (
+  on, // {"click": fn} fn就是原本定义的那个listener函数
+  oldOn,
+  add,
+  remove$$1,
+  createOnceHandler,
+  vm
+) {
+// 省略很多
+      def$$1 = cur = on[name]; // 从on里取了click属性所指的函数
+// 省略很多
+      cur = on[name] = createFnInvoker(cur, vm); // 这里把原本定义的listener封装到一个统一函数里
+// 省略很多
+      add(event.name, cur, event.capture, event.passive, event.params); // add函数把上面这个函数作为listener添加到目标元素
+// 省略很多
+}
+```
+
+下面这个`add$1`函数，就是上面的`add`函数的定义。注意对齐参数。
+```js
+function add$1 (
+  name,
+  handler,
+  capture,
+  passive
+) {
+  if (useMicrotaskFix) {
+    var attachedTimestamp = currentFlushTimestamp;
+    var original = handler;
+    // 这里被封了一层，如果useMicrotaskFix，最终用的就是这个函数
+    // 所以查看元素的Event Listeners的时候，指向的是这个函数
+    handler = original._wrapper = function (e) {
+      if (
+        e.target === e.currentTarget ||
+        e.timeStamp >= attachedTimestamp ||
+        e.timeStamp <= 0 ||
+        e.target.ownerDocument !== document
+      ) {
+        return original.apply(this, arguments)
+      }
+    };
+  }
+  // 这里就真正把listener注册到dom了，要记得这个target$1，在前面是被赋值成目标元素的
+  target$1.addEventListener(
+    name,
+    handler,
+    supportsPassive
+      ? { capture: capture, passive: passive }
+      : capture
+  );
+}
+```
 
 ## 面试题中关于vue的
 
