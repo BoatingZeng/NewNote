@@ -33,9 +33,9 @@
 
 ```js
 // 循环版
-function bitAdd(b, a){
+function bitAdd(a, b){
   while(b){
-      [b, a] = [(b & a) << 1, b ^ a];
+      [a, b] = [a ^ b, (a & b) << 1];
   }
   return a;
 }
