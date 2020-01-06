@@ -128,6 +128,11 @@ setInterval(replaceThing, 100);
 
 在此例中，有两个闭包。第一个unused，引用了origin，如果没有后面的闭包，unused会在函数结束后清除，闭包作用域也跟着清除了，但是因为后面闭包是全局变量，其所引用的闭包作用域一直存在，而这个作用域是包括unused的闭包作用域的（就是同一个函数内部的闭包作用域只有一个，所有闭包共享，第一段说明），所以origin因为在闭包作用域里不会被清除，而随着不断调用，我们很容易发现，origin指向前一次replace函数执行后留下的对象（该对象再通过作用域链指向闭包作用域），从而形成一个链条。造成内存泄漏。
 
+### 参考
+* https://auth0.com/blog/four-types-of-leaks-in-your-javascript-code-and-how-to-get-rid-of-them/
+
+js中引用了dom对象，会导致即使dom对象从dom树中移除也无法回收，所以要注意把这个js中的引用也清除。另外，自节点没有被回收，父节点也不会被回收。
+
 ## let和const
 
 在for里使用let

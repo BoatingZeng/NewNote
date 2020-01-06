@@ -120,6 +120,21 @@ c.addEventListener('click', function(e){
 * addEventListener的第三个参数useCapture，指示的是listener在什么阶段触发，true的话就是在捕获阶段触发，默认为false，在冒泡阶段触发。它并不影响事件的传播。
 * stopPropagation是阻止事件的传播，在listener里调用，就是说事件触发了这个listener，调用了stopPropagation，这个事件就没后续了。
 
+### DOM0和DOM2
+
+#### DOM0
+* 行内事件：`<button onclick="console.log(1);">button</button>`
+* onclick注册的事件：`button.onclick = function() {}`
+* DOM0事件(handler)只能有一个
+* 要去除，只要把它设置为null即可：`button.onclick = null`
+
+#### DOM2
+* 添加：`button.addEventListener('click', f1)`
+* 去除：`button.removeEventListener('click',f1)`
+* DOM2事件(handler)可以有多个，但是同名的只会有一个
+* 不能去除匿名的DOM2事件(handler)
+* 同名的DOM2和DOM0事件(handler)可以并存
+
 ## Web Worker
 * 实例参考：https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 
