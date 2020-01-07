@@ -683,6 +683,12 @@ function makeRequireFunction(mod) {
 
 `_compile`函数会用底层的compileFunction去处理.js文件的文本内容，并且会用compiledWrapper把模块包起来。代码解释到这里结束，之所以说点到为止，是因为compileFunction和compiledWrapper无法单纯地从js的层面去分析了，所以对这两个函数的解释是基于猜测的。compileFunction的代码是在`src\node_contextify.cc`里的`ContextifyContext::CompileFunction`，这里不贴出来。
 
+## EventEmitter
+虽然nodejs很多模块基于EventEmitter，但是对一般开发者而言，更想问的是：“我应该什么时候用它？什么场景用它？”
+
+* 用于解耦，避免丢一堆callback进去：https://stackoverflow.com/questions/38881170/when-should-i-use-eventemitter
+* 典型的观察者模式：https://codeburst.io/event-emitters-and-listeners-in-javascript-9cf0c639fd63
+
 ## webpack
 
 ### 打包简例

@@ -27,6 +27,9 @@ new Promise(function(resolve, reject) { // promise 1
     resolve();
 }).then(function() { // then返回promise 2
     console.log('promise then');
+    process.nextTick(function() {
+        console.log('process.nextTick3'); // 会在微任务队列的最后执行
+    });
     new Promise(function(resolve, reject) { // promise 3
         console.log('promise 3');
         resolve('value'); // 因为构造函数里那个函数是立刻执行的，所以这个resolve在外层函数体(console.log('promise then');开头的这个函数)返回前就执行了，所以这个promise 3比promise 2更早resolve
@@ -51,6 +54,7 @@ console.log('main2');
 // promise then 3 value
 // promise then 2
 // promise then 4
+// process.nextTick3
 // setTimeout
 // process.nextTick2
 ```
@@ -1028,4 +1032,11 @@ p2.catch(e => {
 
 console.log(p1); // PromiseStatus: rejected; PromiseValue: Error: error
 console.log(p2); // PromiseStatus: rejected; PromiseValue: Error: throw in p2
+```
+
+then的第一个参数传个非函数参数，那么它会被忽略，上一个Promise的结果会传到下一个then。当然，这些奇怪行为都是因为js没有类型检查导致的，实际代码中根本就不应该传个非函数参数进去。
+
+```js
+let p1 = new Promise(function(resolve, reject) {resolve('foo');});
+p1.then(1).then(function(res){console.log(res);}); // 打印foo
 ```
