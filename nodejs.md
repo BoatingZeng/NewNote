@@ -691,6 +691,29 @@ function makeRequireFunction(mod) {
 
 ## webpack
 
+### 参考连接
+* Element的webpack配置分析：https://juejin.im/post/5cb12844e51d456e7a303b64
+
+### 配置说明
+因为webpack的配置实在太多了，所以每个配置的具体用法还是参考官方文档比较稳妥。
+
+#### 导出库
+
+```js
+module.exports = {
+  output:{
+    library: '库名',
+    libraryTarget: '导出给谁(默认var)',
+    libraryExport: '导出什么(默认空，导出整个)'
+  }
+};
+```
+* libraryExport：如果`entry`用了es6的`export default 默认模块`语法，而你需要在`bundle`导出默认模块，那么这里记得填`default`(它的工作方式，就是把默认模块作为`exports`的`default`属性，然后最终bundle里把`exports.default`导出来)。如果是用nodejs那种`module.exports`方式导出整个模块，那么记得留空，留空就是导出整个`exports`。
+* libraryTarget：
+  * var：那么bundle里就是`var 库名 = 导出的东西`
+  * commonjs2：那么就是`module.exports = 导出的东西`
+  * umd：则是umd规范的库，并且用`library`里设置的名字作为模块名。umd兼容amd和commonjs，所以一般用umd就好了。
+
 ### 打包简例
 主要看看bundle.js的注释
 
