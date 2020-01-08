@@ -705,6 +705,9 @@ module.exports = {
     library: '库名',
     libraryTarget: '导出给谁(默认var)',
     libraryExport: '导出什么(默认空，导出整个)'
+  },
+  externals: {
+    './b.js': './b.js'
   }
 };
 ```
@@ -713,6 +716,10 @@ module.exports = {
   * var：那么bundle里就是`var 库名 = 导出的东西`
   * commonjs2：那么就是`module.exports = 导出的东西`
   * umd：则是umd规范的库，并且用`library`里设置的名字作为模块名。umd兼容amd和commonjs，所以一般用umd就好了。
+* externals：表示不把这些打包到bundle，不过会在bundle里留下替换的引用，并且不同`libraryTarget`下替换方式不同
+  * var：直接替换成`module.exports = ./b.js;`
+  * commonjs2：替换成`module.exports = require("./b.js");`
+  * umd：`module.exports = __WEBPACK_EXTERNAL_MODULE__1__;`。`__WEBPACK_EXTERNAL_MODULE__1__`是传进工厂函数的参数，每个依赖用一个参数来代替。
 
 ### 打包简例
 主要看看bundle.js的注释
