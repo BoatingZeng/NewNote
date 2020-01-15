@@ -72,6 +72,23 @@
 ## flex布局
 * http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html
 * http://www.ruanyifeng.com/blog/2015/07/flex-examples.html
+* https://blog.csdn.net/cc18868876837/article/details/88138057
+
+容器属性
+* flex-direction：主轴方向，下面的说明都以row为主轴
+* flex-wrap：一行排不下是否要换行
+* flex-flow：flex-direction和flex-wrap的组合
+* justify-content：项目在主轴上的对齐方式
+* align-items：一行内各个项的对齐方式(在交叉轴方向上)
+* align-content：每行作为整体在flex box中的对齐方式(在交叉轴方向上)
+
+项目属性
+* order：排列顺序，越小越靠前
+* flex-grow：放大比例，默认为0不放大。不为0的项，按照比例占据剩余空间
+* flex-shrink：缩小比例，默认为1，即如果空间不足，该项目将缩小。如果为0，则该项不缩小
+* flex-basis：项目被缩放前的原始大小
+* flex：以上三项的组合
+* align-self：相当于针对单个项目设置align-items。默认为auto，继承父元素的align-items。
 
 ![flex](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/flex.png)
 
