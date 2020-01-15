@@ -105,16 +105,19 @@ http://nec.netease.com/framework/css-media.html
 /* 竖屏 */
 @media screen and (orientation:portrait){
 }
-/* 窗口宽度<960,设计宽度=768 */
+/* layout viewport见viewport一节 */
+/* 设计宽度，是指在这个layout viewport范围内，按照这个设计宽度来布局网页比较合适 */
+/* layout viewport宽度<960,就使用下面样式，下同。设计宽度=768 */
 @media screen and (max-width:959px){
 }
-/* 窗口宽度<768,设计宽度=640 */
+/* layout viewport宽度<768,设计宽度=640 */
+/* 注意，max-width:959px块里的样式依然生效(除非主动覆盖)，所以使用max-width的话，小的要放下面以便覆盖上面样式，使用min-width则相反 */
 @media screen and (max-width:767px){
 }
-/* 窗口宽度<640,设计宽度=480 */
+/* layout viewport宽度<640,设计宽度=480 */
 @media screen and (max-width:639px){
 }
-/* 窗口宽度<480,设计宽度=320 */
+/* layout viewport宽度<480,设计宽度=320 */
 @media screen and (max-width:479px){
 }
 /* windows UI 贴靠 */

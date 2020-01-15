@@ -689,6 +689,37 @@ function makeRequireFunction(mod) {
 * 用于解耦，避免丢一堆callback进去：https://stackoverflow.com/questions/38881170/when-should-i-use-eventemitter
 * 典型的观察者模式：https://codeburst.io/event-emitters-and-listeners-in-javascript-9cf0c639fd63
 
+## Buffer
+```js
+// Buffer.from(array)方法，它依次从数组里取元素，作为自己的元素
+// 如果数组元素超出0xFF，它会丢掉高位，只保留低8位
+var arr = [600, 1000, 9, 255, 256];
+var arrX0 = [0x258, 0x3e8,0x9, 0xff, 0x100]; // 上面数组的16进制形式
+var buf = Buffer.from(arr); // <Buffer 58 e8 09 ff 00>
+
+// Buffer.from(arrayBuffer[, byteOffset[, length]])方法，创建出来的buffer是和传入的arrayBuffer共享内存的
+const arr = new Uint16Array(2);
+arr[0] = 5000;
+arr[1] = 4000;
+// Shares memory with `arr`.
+const buf = Buffer.from(arr.buffer);
+console.log(buf);
+// Prints: <Buffer 88 13 a0 0f>
+// Changing the original Uint16Array changes the Buffer also.
+arr[1] = 6000;
+console.log(buf);
+// Prints: <Buffer 88 13 70 17>
+
+// Buffer.from(buffer)方法，是复制传入buffer，不是共享内存
+const buf1 = Buffer.from('buffer');
+const buf2 = Buffer.from(buf1);
+buf1[0] = 0x61;
+console.log(buf1.toString());
+// Prints: auffer
+console.log(buf2.toString());
+// Prints: buffer
+```
+
 ## webpack
 
 ### 参考连接
