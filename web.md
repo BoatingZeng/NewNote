@@ -158,3 +158,22 @@ Service Worker是一种特殊的Web Worker
 ## http缓存
 * 缓存机制解释：https://www.cnblogs.com/echolun/p/9419517.html
 * 静态资源部署：https://github.com/fouber/blog/issues/6
+
+## script标签的defer和async
+
+* 参考：https://segmentfault.com/a/1190000013615988
+
+![script的加载和执行](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/script_defer_async.png)
+
+* async只是让下载和html解析同时进行，但是执行时依然会停止html解析。
+* defer会让下载和html解析同时进行，并且在html解析完后再执行。一般也是defer用得比较多。
+
+## link标签的preload和prefetch
+
+* 参考：https://www.cnblogs.com/xiaohuochai/p/9183874.html
+
+概括
+* preload是告诉浏览器(本)页面必定需要的资源，浏览器一定会加载这些资源。但它只加载不执行，而是需要执行时再执行(例如在body最后通过script标签执行之前preload的脚本)。
+* as会决定加载的优先级，一般来说脚本就用script，样式就用style，style优先级比script高。
+* prefetch是告诉浏览器(下一个)页面可能需要的资源，让浏览器空闲时加载，但浏览器不一定会加载这些资源。
+* 不要混用，否则会重复加载。
