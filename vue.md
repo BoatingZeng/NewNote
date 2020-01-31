@@ -386,6 +386,24 @@ function add$1 (
 }
 ```
 
+## vue-cli
+
+### babel的配置
+
+#### babel.config.js
+默认使用`@vue/babel-preset-app`。不过不同版本的vue-cli配置写法不同。3版本：`@vue/app`；4版本：`@vue/cli-plugin-babel/preset`。
+
+#### browserslist
+因为用了`@babel/preset-env`，所以通过`browserslist`选项配置。vue-cli默认的`browserslist`是`> 1%, last 2 versions`。也就是支持使用率超过1%的浏览器，并且支持所有浏览器的最新两个版本。
+
+## 杂项
+
+### vue-devtools是怎么检测vue的
+找到vue-devtools中的detector.js，可以发现有两种方法。
+
+1. 检测Nuxt.js(通过`window.__NUXT__ || window.$nuxt`)
+2. 扫描全部页面元素，如果有元素包含`__vue__`属性，则使用了vue
+
 ## 面试题中关于vue的
 
 ### 写React/Vue项目时为什么要在列表组件中写key，其作用是什么？
