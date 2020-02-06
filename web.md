@@ -121,6 +121,8 @@ c.addEventListener('click', function(e){
 * stopPropagation是阻止事件的传播，在listener里调用，就是说事件触发了这个listener，调用了stopPropagation，这个事件就没后续了。
 
 ### DOM0和DOM2
+* 谁先注册就先运行，DOM0和DOM2没有优先度之分
+* 同名的DOM2和DOM0事件(handler)可以并存
 
 #### DOM0
 * 行内事件：`<button onclick="console.log(1);">button</button>`
@@ -133,7 +135,6 @@ c.addEventListener('click', function(e){
 * 去除：`button.removeEventListener('click',f1)`
 * DOM2事件(handler)可以有多个，但是同名的只会有一个
 * 不能去除匿名的DOM2事件(handler)
-* 同名的DOM2和DOM0事件(handler)可以并存
 
 ## Web Worker
 * 实例参考：https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
@@ -148,7 +149,7 @@ Service Worker是一种特殊的Web Worker
 
 * 主要用与缓存资源。还可以在浏览器端客制化请求。
 * 生产环境只支持https。本地开发localhost不要求https。
-* 更新过sw代码后，刷新或者载入页面会安装(install)新的sw，但是不会激活(active)，要等到所有使用旧版sw的页面都关闭后，才会激活新的。
+* 更新过sw代码后，刷新或者载入页面(不缓存，或者用弱缓存，保证客户端的是最新版本)会安装(install)新的sw，但是不会激活(active)，要等到所有使用旧版sw的页面都关闭后，才会激活新的。
 * fetch后的response要clone一份存入cache，原本那份给浏览器，因为response只能读取一次。
 
 ## WebSocket

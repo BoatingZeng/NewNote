@@ -99,6 +99,8 @@
 https://zhuanlan.zhihu.com/p/25321647
 https://www.sitepoint.com/understanding-block-formatting-contexts-in-css/
 
+具有 BFC 特性的元素可以看作是隔离了的独立容器，容器里面的元素不会在布局上影响到外面的元素，并且 BFC 具有普通容器所没有的一些特性。
+
 符合一下其中之一，会产生BFC
 
 * float不为none

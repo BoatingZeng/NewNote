@@ -566,7 +566,7 @@ iterator.next() // { value: undefined, done: true }
 ```
 
 ## Generator
-Generator里的this是没有意义的
+Generator里的this
 ```js
 function* F() {
   this.a = 1;
@@ -589,7 +589,7 @@ function* F() {
   yield this.b = 2;
   yield this.c = 3;
 }
-var f = F.call(F.prototype); // 类似上面
+var f = F.call(F.prototype); // 类似上面，F里的this是F.prototype，而f.__proto__就是F.prototype，所以下面的f通过原型链访问到了abc
 
 f.next();  // Object {value: 2, done: false}
 f.next();  // Object {value: 3, done: false}
@@ -598,6 +598,28 @@ f.next();  // Object {value: undefined, done: true}
 f.a // 1
 f.b // 2
 f.c // 3
+
+var myIterable = {
+  a:1
+}
+
+myIterable[Symbol.iterator] = function* () {
+  yield this.a;
+  yield this.a;
+  yield this.a;
+};
+
+[...myIterable] // [1,1,1]，就是myIterable.a
+
+function* g() {
+  this.b = 11; // 这个this其实就是全局对象
+}
+
+let obj = g();
+
+obj.next();
+
+console.log(b); // 打印11
 ```
 
 ### next 方法的参数
@@ -828,6 +850,9 @@ let b = new B();
 
 ### 类的`prototype`属性和`__proto__`属性
 
+1. 子类的`__proto__`属性，表示构造函数的继承，总指向父类
+2. 子类的`prototype`属性的`__proto__`属性，表示方法的继承，总指向父类的`prototype`属性
+
 ```js
 class A {
 }
@@ -947,6 +972,14 @@ prototype(Child, Parent);
 
 var child1 = new Child('kevin', '18');
 ```
+
+### 构造函数有返回值
+* https://www.cnblogs.com/guanghe/p/11356347.html
+
+原则上构造函数是不应该有返回值的。如果有，分下面两种情况。
+
+1. 返回值类型，对函数没影响
+2. 如果返回引用值，则new出来的对象是这个引用值
 
 ## Promise
 

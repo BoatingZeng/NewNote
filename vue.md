@@ -396,6 +396,11 @@ function add$1 (
 #### browserslist
 因为用了`@babel/preset-env`，所以通过`browserslist`选项配置。vue-cli默认的`browserslist`是`> 1%, last 2 versions`。也就是支持使用率超过1%的浏览器，并且支持所有浏览器的最新两个版本。
 
+## vue-router
+
+### 动态去除路由
+vue-router(现在版本3.1.3，现在时间2020-02-05)有动态添加路由的方法`addRoutes`，但是没有动态删除路由的方法，只能替换(matcher)：https://github.com/vuejs/vue-router/issues/1234#issuecomment-357941465
+
 ## 杂项
 
 ### vue-devtools是怎么检测vue的
