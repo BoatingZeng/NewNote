@@ -401,6 +401,15 @@ function add$1 (
 ### 动态去除路由
 vue-router(现在版本3.1.3，现在时间2020-02-05)有动态添加路由的方法`addRoutes`，但是没有动态删除路由的方法，只能替换(matcher)：https://github.com/vuejs/vue-router/issues/1234#issuecomment-357941465
 
+### 怎样监听URL变化
+在地址栏里按回车，浏览器怎么知道不需要往服务器发请求？
+
+* hash mode的话，可以监听hashchange事件，毕竟只是改变hash的话，浏览器本身就不会发请求
+* history mode的话，在地址栏里按回车，是怎么都会发请求的，即使是同一个url。但是监听popstate事件，可以在点击回退或前进按钮时，避免重新发请求。
+
+参考：
+* https://zhuanlan.zhihu.com/p/27588422
+
 ## 杂项
 
 ### vue-devtools是怎么检测vue的
