@@ -442,14 +442,14 @@ function Cat() {
     console.log(this.lives); // 外层是Cat函数，所以这个jumps的this就是Cat的this
   }
 }
-var c = new Cat(); // 类比 Cat.call(c);
+var c = new Cat(); // 类比：var c = {}; Cat.call(c);
 c.jumps(); // 9
 c.jumps.call({lives: 999}); // 9
 
-// 需要this是动态的时候，也不要用箭头函数，比如事件
+// 事件注册时注意
 var button = document.getElementById('press');
 button.addEventListener('click', () => {
-  this.classList.toggle('on'); // 这里this也是全局对象
+  this.classList.toggle('on'); // 这里this也是外层作用域的，因为这里外层就是全局，所以this是window
 });
 ```
 
