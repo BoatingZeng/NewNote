@@ -387,13 +387,40 @@ const sortNumbers = (...numbers) => numbers.sort();
 ### 箭头函数
 要注意的问题
 
-* 函数体内的this对象，就是定义时所在的对象，而不是使用时所在的对象。
+* 函数体内的this对象，就是定义时外层作用域的this，会随外层作用域的this而改变。或者说箭头函数本身没有this，它只是外层作用域this的一个引用。不能(用call等)直接改变箭头函数的this
 
 ```js
+function foo() {
+  setTimeout(() => {
+    console.log('id:', this.id); // 这里的this保持和foo的this一致
+  }, 100);
+}
+
+// 或者用老方法(闭包，通过that引用指向外面的this)
+function foo() {
+    var that = this;
+    setTimeout(() => {
+    console.log('id:', that.id); // 这里的that保持和foo的this一致
+  }, 100);
+}
+
+var id = 21;
+foo.call({ id: 42 }); // id: 42
+foo(); // id: 21
+
+const bar = {
+  id: 233,
+  baz: () => {
+    console.log('id:', this.id); // 外层作用域就是全局了，所以这里的this永远是全局对象
+  }
+}
+bar.baz.call(bar); // id: 21 这里this依然是全局
+bar.baz(); // id: 21
+
 const cat = {
   lives: 9,
   jumps: () => {
-    this.lives--; // 这里this是指向全局，所以箭头函数不要作为对象的方法
+    console.log(lives); // 这里this是指向全局，所以箭头函数不要作为对象的方法
   }
 }
 
@@ -402,7 +429,7 @@ class Cat{
   lives = 9;
 
   jumps = () => {
-    this.lives--; // 这里let c = new Cat之后，c.jumps()里的this却是c本身。
+    console.log(lives); // 这里let c = new Cat之后，c.jumps()里的this却是c本身。
   }
 }
 
@@ -412,9 +439,12 @@ Cat.prototype.jumps; // undefined 惊了，jumps不在prototype里
 function Cat() {
   this.lives = 9;
   this.jumps = () => {
-    this.lives--;
+    console.log(this.lives); // 外层是Cat函数，所以这个jumps的this就是Cat的this
   }
 }
+var c = new Cat(); // 类比 Cat.call(c);
+c.jumps(); // 9
+c.jumps.call({lives: 999}); // 9
 
 // 需要this是动态的时候，也不要用箭头函数，比如事件
 var button = document.getElementById('press');
