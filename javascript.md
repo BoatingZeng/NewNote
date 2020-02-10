@@ -12,6 +12,7 @@
 * https://juejin.im/post/5c337ae06fb9a049bc4cd218
 * https://blog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
 * https://juejin.im/post/5c3e8d90f265da614274218a
+* https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick
 
 例子：
 ```js
@@ -140,6 +141,9 @@ fs.readFile(__filename, () => {
 
 #### process.nextTick
 可以把它理解成一个独立的微任务队列，而且这个队列里的任务，只能通过nextTick加进去。现在把它叫做nextTick队列，nextTick队列会在每个阶段结束后执行清空，清空后才进入下一个阶段。所以如果清空nextTick的时候一直有新的nextTick进队，会一直处理nextTick队列。
+
+nextTick的具体应用场景
+* https://blog.csdn.net/baby97/article/details/48521119
 
 #### 11前后的区别
 Node10以前和Node11以后，执行顺序有所不同。尽量避免利用执行顺序的先后特性来实现某些功能。
@@ -791,19 +795,22 @@ function* gen(){
   console.log('after wait 1 second', d2);
 }
 
-function run(gen){
+// 返回Promise，并且这个Promise在generator执行完毕后resolve
+function run(gen) {
   var g = gen();
-
-  function next(data){
-    var result = g.next(data);
-    if (result.done) return result.value;
-    result.value.then(next);
-  }
-
-  next();
+  return new Promise(function(resolve, reject){
+    function next(data) {
+      var result = g.next(data);
+      if (result.done) return resolve();
+      result.value.then(next);
+    }
+    next();
+  });
 }
 
-run(gen);
+run(gen).then(function(){
+  console.log('end');
+});
 ```
 
 ## async函数
