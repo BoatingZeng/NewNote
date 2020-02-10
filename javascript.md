@@ -1,12 +1,19 @@
 ## Event Loop
-https://juejin.im/post/5c3d8956e51d4511dc72c200
+浏览器和nodejs的event loop其实是不同的，下面的讨论以实际表现为准，并且nodejs11之后，也保持和浏览器表现一致。
 
-* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、I/O、UI Rendering、MessageChannel
+* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、setImmediate、I/O、UI Rendering、MessageChannel
 * MicroTask(微任务)：Process.nextTick（Node独有）、Promise、Object.observe(废弃)、MutationObserver
 * async函数底层也是Promise，但是在不同运行环境可能有不同表现，详见下面例子
 
-每次执行完宏任务后，检查微任务队列，把微任务队列里的全部执行。
+执行顺序，以Node11以后和浏览器为准。每执行完一个宏任务，就去执行整个微任务队列，直至微任务队列为空，所以微任务队列执行期间，如果继续有微任务进入队列，会继续执行微任务。
 
+参考：
+* https://juejin.im/post/5c3d8956e51d4511dc72c200
+* https://juejin.im/post/5c337ae06fb9a049bc4cd218
+* https://blog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+* https://juejin.im/post/5c3e8d90f265da614274218a
+
+例子：
 ```js
 console.log('main1');
 
@@ -97,6 +104,88 @@ console.log('script end')
 // promise1
 // promise2
 // setTimeout
+```
+
+### nodejs的event loop
+![Nodejs Event Loop](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/node_event_loop.png)
+
+#### setTimeout 和 setImmediate
+```js
+setTimeout(function timeout () {
+  console.log('timeout');
+},0);
+setImmediate(function immediate () {
+  console.log('immediate');
+});
+// timeout
+// immediate
+// 通常来说，这里设置0ms超时，主体代码执行完，进入timer阶段时，
+// setTimeout设置的任务已经超时了，所以会先执行。但是上述结果不是必然，因为setTimeout需要超时判断。
+
+const fs = require('fs')
+fs.readFile(__filename, () => {
+    setTimeout(() => {
+        console.log('timeout');
+    }, 0)
+    setImmediate(() => {
+        console.log('immediate')
+    })
+})
+// immediate
+// timeout
+// 这里主体代码执行完毕后，就等待i/o回调，i/o回调在poll阶段，
+// poll阶段的下一个阶段时check阶段，setImmediate会在这里执行，
+// 之后再回到timer阶段，所以setImmediate会先执行
+```
+
+#### process.nextTick
+可以把它理解成一个独立的微任务队列，而且这个队列里的任务，只能通过nextTick加进去。现在把它叫做nextTick队列，nextTick队列会在每个阶段结束后执行清空，清空后才进入下一个阶段。所以如果清空nextTick的时候一直有新的nextTick进队，会一直处理nextTick队列。
+
+#### 11前后的区别
+Node10以前和Node11以后，执行顺序有所不同。尽量避免利用执行顺序的先后特性来实现某些功能。
+
+Node10以前：
+1. 执行完一个阶段的所有任务
+2. 执行完nextTick队列里面的内容
+3. 然后执行完微任务队列的内容
+
+Node11以后：和浏览器的行为统一了，都是每执行一个宏任务就执行完微任务队列
+```js
+console.log('start')
+setTimeout(() => {
+  console.log('timer1')
+  Promise.resolve().then(function() {
+    console.log('promise1')
+  })
+}, 0)
+setTimeout(() => {
+  console.log('timer2')
+  Promise.resolve().then(function() {
+    console.log('promise2')
+  })
+}, 0)
+Promise.resolve().then(function() {
+  console.log('promise3')
+})
+console.log('end')
+
+// node10执行
+// start
+// end
+// promise3
+// timer1
+// timer2
+// promise1
+// promise2
+
+// node11以后和浏览器
+// start
+// end
+// promise3
+// timer1
+// promise1
+// timer2
+// promise2
 ```
 
 ## 内存泄漏
