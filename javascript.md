@@ -821,6 +821,9 @@ run(gen).then(function(){
 ## class
 
 ### 基本语法
+1. es6 class的方法是没有prototype，es5的函数无法去除prototype
+2. 要注意es6 class的方法是不可枚举的，es5要通过`Object.defineProperty()`来定义不可枚举的方法
+
 ```js
 class Point {
   x = 0 // 实例属性，也可以写在constructor里，this.x=0
@@ -837,8 +840,6 @@ Point.st() = function(){}; // 实例没有这个方法，无法正常继承
 Point.prototype.toString = function() {};
 Point.prototype.toValue = function() {};
 ```
-
-**class定义的方法是不可枚举的，但是ES5通过prototype用点运算符定义的是可枚举的。**
 
 ```js
 class Point {
@@ -978,6 +979,8 @@ let b = new B();
 
 1. 子类的`__proto__`属性，表示构造函数的继承，总指向父类
 2. 子类的`prototype`属性的`__proto__`属性，表示方法的继承，总指向父类的`prototype`属性
+3. 实例的`__proto__`指向类的`prototype`
+4. 函数也是对象，它是函数类`Function`的实例
 
 ```js
 class A {
@@ -989,7 +992,7 @@ A.prototype.__proto__ === Object.prototype // true
 class B extends A {
 }
 
-B.__proto__ === A // true
+B.__proto__ === A // true，这里A是谁的prototype？
 B.prototype.__proto__ === A.prototype // true
 
 class C extends null{}
