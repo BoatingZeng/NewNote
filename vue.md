@@ -20,13 +20,17 @@ https://zhuanlan.zhihu.com/p/53703176
 3. VM把M的变化反应到V，同时也会把V的变化反应到M。比如在Vue里，就是用VM把V和M绑定起来。
 
 ## 虚拟dom、diff、渲染
-https://www.zhihu.com/question/31809713
+参考：
+* https://www.zhihu.com/question/31809713
+* https://juejin.im/post/5d085ce85188255e1305cda1
+* https://github.com/aooy/blog/issues/2
+* https://github.com/answershuto/learnVue/blob/master/docs/VirtualDOM%E4%B8%8Ediff(Vue%E5%AE%9E%E7%8E%B0).MarkDown
+* https://juejin.im/post/5affd01551882542c83301da
 
-dom操作不是纯js层面的操作。而virtual dom操作是纯js操作，而且也没有真正的dom那么复杂，它是比真正的dom操作快的。
-
-https://juejin.im/post/5d085ce85188255e1305cda1
-https://github.com/aooy/blog/issues/2
-https://github.com/answershuto/learnVue/blob/master/docs/VirtualDOM%E4%B8%8Ediff(Vue%E5%AE%9E%E7%8E%B0).MarkDown
+概括：
+* dom操作不是纯js层面的操作。而virtual dom操作是纯js操作，而且也没有真正的dom那么复杂，它是比真正的dom操作快的。
+* diff的时候，是4个指针，从新旧节点序列从两端各自往中间遍历，互相比较，如果有相同就复用。这种比较是偷懒的，并非把新旧节点列表里的节点都一一对比。
+* 如果有key的话，除了只比较这4个指针指向的节点，新节点还可以利用key，从hashmap里找key相同的旧节点进行比较，提高复用率。
 
 ## render函数
 ```js
