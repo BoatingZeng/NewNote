@@ -16,6 +16,7 @@ https://www.freebuf.com/articles/web/185654.html
 
 ## CSRF
 Cross-site request forgery、跨站请求伪造
+https://www.freebuf.com/articles/web/186880.html
 
 概念：攻击者诱导受害者进入第三方网站，在第三方网站中，向被攻击网站发送跨站请求。利用受害者在被攻击网站已经获取的注册凭证，绕过后台的用户验证，达到冒充用户对被攻击的网站执行某项操作的目的。通常是用了受害者的cookie。
 
@@ -119,6 +120,22 @@ c.addEventListener('click', function(e){
 * addEventListener的第三个参数useCapture，指示的是listener在什么阶段触发，true的话就是在捕获阶段触发，默认为false，在冒泡阶段触发。它并不影响事件的传播。
 * stopPropagation是阻止事件的传播，在listener里调用，就是说事件触发了这个listener，调用了stopPropagation，这个事件就没后续了。
 
+### DOM0和DOM2
+* 谁先注册就先运行，DOM0和DOM2没有优先度之分
+* 同名的DOM2和DOM0事件(handler)可以并存
+
+#### DOM0
+* 行内事件：`<button onclick="console.log(1);">button</button>`
+* onclick注册的事件：`button.onclick = function() {}`
+* DOM0事件(handler)只能有一个
+* 要去除，只要把它设置为null即可：`button.onclick = null`
+
+#### DOM2
+* 添加：`button.addEventListener('click', f1)`
+* 去除：`button.removeEventListener('click',f1)`
+* DOM2事件(handler)可以有多个，但是同名的只会有一个
+* 不能去除匿名的DOM2事件(handler)
+
 ## Web Worker
 * 实例参考：https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 
@@ -132,9 +149,32 @@ Service Worker是一种特殊的Web Worker
 
 * 主要用与缓存资源。还可以在浏览器端客制化请求。
 * 生产环境只支持https。本地开发localhost不要求https。
-* 更新过sw代码后，刷新或者载入页面会安装(install)新的sw，但是不会激活(active)，要等到所有使用旧版sw的页面都关闭后，才会激活新的。
+* 更新过sw代码后，刷新或者载入页面(不缓存，或者用弱缓存，保证客户端的是最新版本)会安装(install)新的sw，但是不会激活(active)，要等到所有使用旧版sw的页面都关闭后，才会激活新的。
 * fetch后的response要clone一份存入cache，原本那份给浏览器，因为response只能读取一次。
 
 ## WebSocket
 
 * ping、pong心跳，目前，浏览器中没有相关api发送ping给服务器，只能由服务器发ping给浏览器，浏览器(自动)返回pong消息。ping、pong和message是分开的，所以onmessage里是不会收到ping、pong信息的。
+
+## http缓存
+* 缓存机制解释：https://www.cnblogs.com/echolun/p/9419517.html
+* 静态资源部署：https://github.com/fouber/blog/issues/6
+
+## script标签的defer和async
+
+* 参考：https://segmentfault.com/a/1190000013615988
+
+![script的加载和执行](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/script_defer_async.png)
+
+* async只是让下载和html解析同时进行，但是执行时依然会停止html解析。
+* defer会让下载和html解析同时进行，并且在html解析完后再执行。一般也是defer用得比较多。
+
+## link标签的preload和prefetch
+
+* 参考：https://www.cnblogs.com/xiaohuochai/p/9183874.html
+
+概括
+* preload是告诉浏览器(本)页面必定需要的资源，浏览器一定会加载这些资源。但它只加载不执行，而是需要执行时再执行(例如在body最后通过script标签执行之前preload的脚本)。
+* as会决定加载的优先级，一般来说脚本就用script，样式就用style，style优先级比script高。
+* prefetch是告诉浏览器(下一个)页面可能需要的资源，让浏览器空闲时加载，但浏览器不一定会加载这些资源。
+* 不要混用，否则会重复加载。

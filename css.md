@@ -57,9 +57,9 @@
 大多为描述性标记，例如：`<span>,<a>,<b>,<input>,<select>`
 
 1. 和其他元素都在一行
-2. 高度、宽度以及内边距都是不可控的
-3. 宽高就是内容的高度，不可以改变
-4. 行内元素只能行内元素，不能包含块级元素
+2. 行内元素只能包含行内元素，不能包含块级元素(否则行为会很诡异)
+3. 不可以设置宽高，宽度高度随文本内容的变化而变化，但是可以设置行高
+4. margin上下无效，左右有效；padding上下左右都有效
 
 ## 浮动
 * 浮动元素的外边距不会合并
@@ -72,14 +72,34 @@
 ## flex布局
 * http://www.ruanyifeng.com/blog/2015/07/flex-grammar.html
 * http://www.ruanyifeng.com/blog/2015/07/flex-examples.html
+* https://blog.csdn.net/cc18868876837/article/details/88138057
+
+容器属性
+* flex-direction：主轴方向，下面的说明都以row为主轴
+* flex-wrap：一行排不下是否要换行
+* flex-flow：flex-direction和flex-wrap的组合
+* justify-content：项目在主轴上的对齐方式
+* align-items：一行内各个项的对齐方式(在交叉轴方向上)
+* align-content：每行作为整体在flex box中的对齐方式(在交叉轴方向上)
+
+项目属性
+* order：排列顺序，越小越靠前
+* flex-grow：放大比例，默认为0不放大。不为0的项，按照比例占据剩余空间
+* flex-shrink：缩小比例，默认为1，即如果空间不足，该项目将缩小。如果为0，则该项不缩小
+* flex-basis：项目被缩放前的原始大小
+* flex：以上三项的组合
+* align-self：相当于针对单个项目设置align-items。默认为auto，继承父元素的align-items。
 
 ![flex](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/flex.png)
 
 ## grid布局
+* https://www.ruanyifeng.com/blog/2019/03/grid-layout-tutorial.html
 
 ## BFC(Block Formatting Context、块格式化上下文)
 https://zhuanlan.zhihu.com/p/25321647
 https://www.sitepoint.com/understanding-block-formatting-contexts-in-css/
+
+具有 BFC 特性的元素可以看作是隔离了的独立容器，容器里面的元素不会在布局上影响到外面的元素，并且 BFC 具有普通容器所没有的一些特性。
 
 符合一下其中之一，会产生BFC
 
@@ -105,16 +125,19 @@ http://nec.netease.com/framework/css-media.html
 /* 竖屏 */
 @media screen and (orientation:portrait){
 }
-/* 窗口宽度<960,设计宽度=768 */
+/* layout viewport见viewport一节 */
+/* 设计宽度，是指在这个layout viewport范围内，按照这个设计宽度来布局网页比较合适 */
+/* layout viewport宽度<960,就使用下面样式，下同。设计宽度=768 */
 @media screen and (max-width:959px){
 }
-/* 窗口宽度<768,设计宽度=640 */
+/* layout viewport宽度<768,设计宽度=640 */
+/* 注意，max-width:959px块里的样式依然生效(除非主动覆盖)，所以使用max-width的话，小的要放下面以便覆盖上面样式，使用min-width则相反 */
 @media screen and (max-width:767px){
 }
-/* 窗口宽度<640,设计宽度=480 */
+/* layout viewport宽度<640,设计宽度=480 */
 @media screen and (max-width:639px){
 }
-/* 窗口宽度<480,设计宽度=320 */
+/* layout viewport宽度<480,设计宽度=320 */
 @media screen and (max-width:479px){
 }
 /* windows UI 贴靠 */
@@ -124,6 +147,21 @@ http://nec.netease.com/framework/css-media.html
 @media print{
 }
 ```
+
+## viewport
+通俗来说，就是拿个放大镜(手机)去看电脑浏览器上的网页。参考：https://www.cnblogs.com/xiaocaiyuxiaoniao/p/8084707.html
+
+```html
+<!-- 一般都这样设置，这样其实就是layout viewport和visual viewport都和设备屏幕一样大 -->
+<!-- 也就是放大镜缩放比例是1，而且电脑浏览器的大小和你放大镜镜片大小一样 -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+```
+
+* layout viewport：就是放置网页的假想空间。
+* visual viewport：理解成一个投影层，它把layout viewport的一部分投影到设备屏幕，它越大，它所投影的layout viewport范围就越大(也就是网页被展示的范围越大，直观上看，就是看到的字更小，因为屏幕大小是不变的)。
+* 设备屏幕：就是实际展示画面的地方。
+* width：layout viewport的宽度。
+* initial-scale：直观上理解，就是内容的缩放比例，值越大，内容就越大。实际上，它其实等于(设备屏幕大小/visual viewport大小)，而设备的大小是不变的，scale越大，visual viewport越小。
 
 ## 参考链接汇总
 因为实在太杂太多了。所以放参考记录参考链接方便查水表。先记录一些汇总链接，然后后面补充一些特定主题的。

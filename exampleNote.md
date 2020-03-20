@@ -21,10 +21,10 @@ console.log(global.b);
 ```
 
 ## nodejs里的exports和module.exports
-exports是module.exports的一个引用(short cut)。最终导出的是module.exports。所以如果只是改变了exports的指向，其实并没有改变module.exports。
+exports是module.exports的一个引用(short cut)。最终导出的是module.exports。所以如果只是改变了exports的指向，其实并没有改变module.exports。另外，在代码最外层打印this，指的也是最初的(最初的意思是，module.exports在代码中可能中途指向了其他对象)module.exports。详细参考nodejs笔记里的require部分。
 
 ## Object.create()和Object.setPrototypeOf()
-这两个方法都会让目标对象的__proto__指向指定的对象。
+这两个方法都会让目标对象的`__proto__`指向指定的对象。
 
 ```js
 const person = {
@@ -40,7 +40,7 @@ me.__proto__ === person // true
 
 const you = {};
 
-Object.setPrototypeOf(me, person);
+Object.setPrototypeOf(you, person);
 
 you.__proto__ === person; // true
 ```
@@ -78,8 +78,8 @@ Object.defineProperty(o, 'num',{
 ```
 
 ## 防抖和节流的区别
-* 防抖：在事件被触发n秒后再执行回调，如果在这n秒内又被触发，则重新计时。比如搜索框的输入，是用户停止一段时间后才会去执行搜索。比如window触发resize的时候，不断的调整浏览器窗口大小会不断的触发这个事件，用防抖来让其只触发一次。
-* 节流：规定在一个单位时间内，只能触发一次函数。如果这个单位时间内触发多次函数，只有一次生效。比如用户不停地点击，只让其中一部分点击生效。比如懒加载时要监听计算滚动条的位置，但不必每次滑动都触发。
+* 防抖：在事件被触发n秒后再执行回调，如果在这n秒内又被触发，则重新计时。比如搜索框的输入，是用户停止一段时间后才会去执行搜索。比如window触发resize的时候，不断的调整浏览器窗口大小会不断的触发这个事件，用防抖来让其只触发一次。**最初动作未必是最终结果，等待最终确定动作。**
+* 节流：规定在一个单位时间内，只能触发一次函数。如果这个单位时间内触发多次函数，只有一次生效。比如用户不停地点击，只让其中一部分点击生效。比如懒加载时要监听计算滚动条的位置，但不必每次滑动都触发。**取最初动作为结果，减少之后的重复动作。**
 
 ## 页面上传文件(ajax)
 

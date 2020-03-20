@@ -1,12 +1,20 @@
 ## Event Loop
-https://juejin.im/post/5c3d8956e51d4511dc72c200
+浏览器和nodejs的event loop其实是不同的，下面的讨论以实际表现为准，并且nodejs11之后，也保持和浏览器表现一致。
 
-* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、I/O、UI Rendering、MessageChannel
+* MacroTask(宏任务)：script全部代码(或者说同步代码本身)、setTimeout、setInterval、setImmediate、I/O、UI Rendering、MessageChannel
 * MicroTask(微任务)：Process.nextTick（Node独有）、Promise、Object.observe(废弃)、MutationObserver
 * async函数底层也是Promise，但是在不同运行环境可能有不同表现，详见下面例子
 
-每次执行完宏任务后，检查微任务队列，把微任务队列里的全部执行。
+执行顺序，以Node11以后和浏览器为准。每执行完一个宏任务，就去执行整个微任务队列，直至微任务队列为空，所以微任务队列执行期间，如果继续有微任务进入队列，会继续执行微任务。
 
+参考：
+* https://juejin.im/post/5c3d8956e51d4511dc72c200
+* https://juejin.im/post/5c337ae06fb9a049bc4cd218
+* https://blog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+* https://juejin.im/post/5c3e8d90f265da614274218a
+* https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick
+
+例子：
 ```js
 console.log('main1');
 
@@ -21,13 +29,26 @@ setTimeout(function() {
     });
 }, 0);
 
-new Promise(function(resolve, reject) {
-    console.log('promise'); // new Promise里的那个函数是立刻执行的!
+// 这个Promise一开始执行后，微任务队列就一直不空，所以上面的setTimeout会在promise then 4后打印
+new Promise(function(resolve, reject) { // promise 1
+    console.log('promise'); // new Promise里的那个函数是立刻执行的!所以它比main2还早打印。
     resolve();
-}).then(function() {
+}).then(function() { // then返回promise 2
     console.log('promise then');
+    process.nextTick(function() {
+        console.log('process.nextTick3'); // 会在微任务队列的最后执行
+    });
+    new Promise(function(resolve, reject) { // promise 3
+        console.log('promise 3');
+        resolve('value'); // 因为构造函数里那个函数是立刻执行的，所以这个resolve在外层函数体(console.log('promise then');开头的这个函数)返回前就执行了，所以这个promise 3比promise 2更早resolve
+    }).then(function(v){ // then返回promise 4
+        console.log('promise then 3 ' + v); // 会比promise then 2先执行
+    }).then(function(){
+      console.log('promise then 4 '); // 这个会比promise then 2迟，但是比setTimeout早
+    });
+    // 这里返回后，promise 2就resolve
 }).then(function() {
-    console.log('promise then 2'); // 这里会比setTimeout还要早执行，因为上面console.log('promise then');执行完后，这里的回调已经在微任务里了。而同步代码console.log('promise then');本身就是宏任务，宏任务执行完后，又轮到微任务。
+    console.log('promise then 2'); // 这里会比setTimeout还要早执行
 });
 
 console.log('main2');
@@ -37,7 +58,11 @@ console.log('main2');
 // main2
 // process.nextTick1
 // promise then
+// promise 3
+// promise then 3 value
 // promise then 2
+// promise then 4
+// process.nextTick3
 // setTimeout
 // process.nextTick2
 ```
@@ -82,6 +107,91 @@ console.log('script end')
 // setTimeout
 ```
 
+### nodejs的event loop
+![Nodejs Event Loop](https://raw.githubusercontent.com/BoatingZeng/NewNote/master/img/node_event_loop.png)
+
+#### setTimeout 和 setImmediate
+```js
+setTimeout(function timeout () {
+  console.log('timeout');
+},0);
+setImmediate(function immediate () {
+  console.log('immediate');
+});
+// timeout
+// immediate
+// 通常来说，这里设置0ms超时，主体代码执行完，进入timer阶段时，
+// setTimeout设置的任务已经超时了，所以会先执行。但是上述结果不是必然，因为setTimeout需要超时判断。
+
+const fs = require('fs')
+fs.readFile(__filename, () => {
+    setTimeout(() => {
+        console.log('timeout');
+    }, 0)
+    setImmediate(() => {
+        console.log('immediate')
+    })
+})
+// immediate
+// timeout
+// 这里主体代码执行完毕后，就等待i/o回调，i/o回调在poll阶段，
+// poll阶段的下一个阶段时check阶段，setImmediate会在这里执行，
+// 之后再回到timer阶段，所以setImmediate会先执行
+```
+
+#### process.nextTick
+可以把它理解成一个独立的微任务队列，而且这个队列里的任务，只能通过nextTick加进去。现在把它叫做nextTick队列，nextTick队列会在每个阶段结束后执行清空，清空后才进入下一个阶段。所以如果清空nextTick的时候一直有新的nextTick进队，会一直处理nextTick队列。
+
+nextTick的具体应用场景
+* https://blog.csdn.net/baby97/article/details/48521119
+
+#### 11前后的区别
+Node10以前和Node11以后，执行顺序有所不同。尽量避免利用执行顺序的先后特性来实现某些功能。
+
+Node10以前：
+1. 执行完一个阶段的所有任务
+2. 执行完nextTick队列里面的内容
+3. 然后执行完微任务队列的内容
+
+Node11以后：和浏览器的行为统一了，都是每执行一个宏任务就执行完微任务队列
+```js
+console.log('start')
+setTimeout(() => {
+  console.log('timer1')
+  Promise.resolve().then(function() {
+    console.log('promise1')
+  })
+}, 0)
+setTimeout(() => {
+  console.log('timer2')
+  Promise.resolve().then(function() {
+    console.log('promise2')
+  })
+}, 0)
+Promise.resolve().then(function() {
+  console.log('promise3')
+})
+console.log('end')
+
+// node10执行
+// start
+// end
+// promise3
+// timer1
+// timer2
+// promise1
+// promise2
+
+// node11以后和浏览器
+// start
+// end
+// promise3
+// timer1
+// promise1
+// timer2
+// promise2
+```
+
 ## 内存泄漏
 http://point.davidglasser.net/2013/06/27/surprising-javascript-memory-leak.html
 ```js
@@ -115,6 +225,11 @@ setInterval(replaceThing, 100);
 
 在此例中，有两个闭包。第一个unused，引用了origin，如果没有后面的闭包，unused会在函数结束后清除，闭包作用域也跟着清除了，但是因为后面闭包是全局变量，其所引用的闭包作用域一直存在，而这个作用域是包括unused的闭包作用域的（就是同一个函数内部的闭包作用域只有一个，所有闭包共享，第一段说明），所以origin因为在闭包作用域里不会被清除，而随着不断调用，我们很容易发现，origin指向前一次replace函数执行后留下的对象（该对象再通过作用域链指向闭包作用域），从而形成一个链条。造成内存泄漏。
 
+### 参考
+* https://auth0.com/blog/four-types-of-leaks-in-your-javascript-code-and-how-to-get-rid-of-them/
+
+js中引用了dom对象，会导致即使dom对象从dom树中移除也无法回收，所以要注意把这个js中的引用也清除。另外，自节点没有被回收，父节点也不会被回收。
+
 ## let和const
 
 在for里使用let
@@ -132,6 +247,7 @@ let只能出现在当前作用域的顶层。这个规则适用于function声明
 
 ```js
 // 报错。没有大括号，所以不存在块级作用域，let只能出现在当前作用域的顶层
+// SyntaxError: Lexical declaration cannot appear in a single-statement context
 if (true) let x = 1;
 
 // 不报错
@@ -145,7 +261,7 @@ if (true) {
   function f() {}
 }
 
-// 报错
+// 报错 SyntaxError: In strict mode code, functions can only be declared at top level or inside a block.
 'use strict';
 if (true) function f() {}
 ```
@@ -330,6 +446,14 @@ function foo(x, y = function() { x = 2; }) {
 }
 foo() // 2
 x // 1
+
+function foo(x, y = function() { x = 2;}) {}
+// 相当于
+{
+  let x;
+  let y = function() { x = 2;};
+  function foo() {// 这里可以访问x和y};
+}
 ```
 
 ### rest参数
@@ -356,18 +480,69 @@ const sortNumbers = (...numbers) => numbers.sort();
 ### 箭头函数
 要注意的问题
 
+* 函数体内的this对象，就是定义时外层作用域的this，会随外层作用域的this而改变。或者说箭头函数本身没有this，它只是外层作用域this的一个引用。不能(用call等)直接改变箭头函数的this
+
 ```js
+function foo() {
+  setTimeout(() => {
+    console.log('id:', this.id); // 这里的this保持和foo的this一致
+  }, 100);
+}
+
+// 或者用老方法(闭包，通过that引用指向外面的this)
+function foo() {
+    var that = this;
+    setTimeout(() => {
+    console.log('id:', that.id); // 这里的that保持和foo的this一致
+  }, 100);
+}
+
+var id = 21;
+foo.call({ id: 42 }); // id: 42
+foo(); // id: 21
+
+const bar = {
+  id: 233,
+  baz: () => {
+    console.log('id:', this.id); // 外层作用域就是全局了，所以这里的this永远是全局对象
+  }
+}
+bar.baz.call(bar); // id: 21 这里this依然是全局
+bar.baz(); // id: 21
+
 const cat = {
   lives: 9,
   jumps: () => {
-    this.lives--; // 这里this是指向全局，所以箭头函数不要作为对象的方法
+    console.log(lives); // 这里this是指向全局，所以箭头函数不要作为对象的方法
   }
 }
 
-// 需要this是动态的时候，也不要用箭头函数，比如事件
+// 在class里
+class Cat{
+  lives = 9;
+
+  jumps = () => {
+    console.log(lives); // 这里let c = new Cat之后，c.jumps()里的this却是c本身。
+  }
+}
+
+Cat.prototype.jumps; // undefined 惊了，jumps不在prototype里
+// 详细解释：https://javascriptweblog.wordpress.com/2015/11/02/of-classes-and-arrow-functions-a-cautionary-tale/
+// 这里这个jumps，并不是类的方法，而是每个实例自己的属性，相当于下面这种写法
+function Cat() {
+  this.lives = 9;
+  this.jumps = () => {
+    console.log(this.lives); // 外层是Cat函数，所以这个jumps的this就是Cat的this
+  }
+}
+var c = new Cat(); // 类比：var c = {}; Cat.call(c);
+c.jumps(); // 9
+c.jumps.call({lives: 999}); // 9
+
+// 事件注册时注意
 var button = document.getElementById('press');
 button.addEventListener('click', () => {
-  this.classList.toggle('on'); // 这里this也是全局对象
+  this.classList.toggle('on'); // 这里this也是外层作用域的，因为这里外层就是全局，所以this是window
 });
 ```
 
@@ -408,6 +583,8 @@ undefined in emp // false
 3. Object.getOwnPropertyNames(obj)：返回一个数组，包含对象自身的（不包含继承的）所有属性（不含 Symbol 属性，但是包括不可枚举属性）的键名。
 4. Object.getOwnPropertySymbols(obj)：返回一个数组，包含对象自身的所有 Symbol 属性的键名。
 5. Reflect.ownKeys(obj)：返回一个数组，包含对象自身的所有键名，不管键名是 Symbol 或字符串，也不管是否可枚举。
+
+注：属性的是否可枚举，是可以设定的。比如数组的`length`就是不可枚举属性。给一个对象直接用点运算符赋值的是可枚举，`defineProperties`定义的属性默认不可枚举。
 
 ### 扩展运算符(...)
 用于取出参数对象的所有可遍历属性，拷贝到当前对象之中
@@ -458,12 +635,23 @@ iframe.contentWindow.Symbol.for('foo') === Symbol.for('foo') // true
 ## Proxy
 用途：对象监听。比起definePropety的setter和getter，Proxy可以拦截关键字或者运算符还有函数等的默认行为。而且不用一个个属性通过definePropety定义，而是可以通过统一的handler拦截。
 
-set和get这两个拦截器的receiver参数，一般情况都不用，主要是在当对象的属性不是正常访问和设置时使用。(正常访问和设置，一般就是通过点运算符来访问和设置)
+set和get这两个拦截器的receiver参数，一般情况都不用，主要是在当对象的属性不是正常访问和设置时使用。(正常访问和设置，一般就是通过点运算符来访问和设置)。见下面例子。
+
+```js
+var proxy = new Proxy({}, {
+  get: function(target, property, receiver) {
+    return receiver; // 访问什么属性都是获得这个receiver
+  }
+});
+proxy.getReceiver === proxy; // true
+var inherits = Object.create(proxy);
+inherits.getReceiver === inherits; // true
+```
 
 https://github.com/mqyqingfeng/Blog/issues/107
 
 ## Reflect
-是个对象，不是函数。其方法和Proxy的方法一一对应。
+是个对象，不是函数,包含13个静态方法。其方法和Proxy的方法一一对应。其实就是个函数库。
 
 ## Iterator和for...of
 有Symbol.iterator属性的对象，就是可遍历的(可for..of)
@@ -501,7 +689,7 @@ iterator.next() // { value: undefined, done: true }
 ```
 
 ## Generator
-Generator里的this是没有意义的
+Generator里的this
 ```js
 function* F() {
   this.a = 1;
@@ -524,7 +712,7 @@ function* F() {
   yield this.b = 2;
   yield this.c = 3;
 }
-var f = F.call(F.prototype); // 类似上面
+var f = F.call(F.prototype); // 类似上面，F里的this是F.prototype，而f.__proto__就是F.prototype，所以下面的f通过原型链访问到了abc
 
 f.next();  // Object {value: 2, done: false}
 f.next();  // Object {value: 3, done: false}
@@ -533,6 +721,28 @@ f.next();  // Object {value: undefined, done: true}
 f.a // 1
 f.b // 2
 f.c // 3
+
+var myIterable = {
+  a:1
+}
+
+myIterable[Symbol.iterator] = function* () {
+  yield this.a;
+  yield this.a;
+  yield this.a;
+};
+
+[...myIterable] // [1,1,1]，就是myIterable.a
+
+function* g() {
+  this.b = 11; // 这个this其实就是全局对象
+}
+
+let obj = g();
+
+obj.next();
+
+console.log(b); // 打印11
 ```
 
 ### next 方法的参数
@@ -585,21 +795,22 @@ function* gen(){
   console.log('after wait 1 second', d2);
 }
 
-function run(gen){
+// 返回Promise，并且这个Promise在generator执行完毕后resolve
+function run(gen) {
   var g = gen();
-
-  function next(data){
-    var result = g.next(data);
-    if (result.done) return result.value;
-    result.value.then(function(data){
-      next(data);
-    });
-  }
-
-  next();
+  return new Promise(function(resolve, reject){
+    function next(data) {
+      var result = g.next(data);
+      if (result.done) return resolve();
+      result.value.then(next);
+    }
+    next();
+  });
 }
 
-run(gen);
+run(gen).then(function(){
+  console.log('end');
+});
 ```
 
 ## async函数
@@ -610,6 +821,9 @@ run(gen);
 ## class
 
 ### 基本语法
+1. es6 class的方法是没有prototype，es5的函数无法去除prototype
+2. 要注意es6 class的方法是不可枚举的，es5要通过`Object.defineProperty()`来定义不可枚举的方法
+
 ```js
 class Point {
   x = 0 // 实例属性，也可以写在constructor里，this.x=0
@@ -621,16 +835,11 @@ class Point {
 }
 
 // 等同于
-function Point(){};
+function Point(){this.x = 0};
 Point.st() = function(){}; // 实例没有这个方法，无法正常继承
-Point.prototype = {
-  constructor() {this.x = 0},
-  toString() {},
-  toValue() {},
-};
+Point.prototype.toString = function() {};
+Point.prototype.toValue = function() {};
 ```
-
-**class定义的方法是不可枚举的，但是ES5通过prototype定义的是可枚举的。**可以利用
 
 ```js
 class Point {
@@ -646,6 +855,13 @@ Point.prototype.toString = function() {};
 
 Object.keys(Point.prototype)// ["toString"]
 Object.getOwnPropertyNames(Point.prototype)// ["constructor","toString"]
+
+// 用defineProperties定义的话，默认就不可枚举了。
+Object.defineProperties(Point.prototype, {
+    toString: {
+        value: function() {}
+    }
+});
 ```
 
 ### new.target关键字
@@ -759,7 +975,12 @@ class B extends A {
 let b = new B();
 ```
 
-### 类的prototype属性和__proto__属性
+### 类的`prototype`属性和`__proto__`属性
+
+1. 子类的`__proto__`属性，表示构造函数的继承，总指向父类
+2. 子类的`prototype`属性的`__proto__`属性，表示方法的继承，总指向父类的`prototype`属性
+3. 实例的`__proto__`指向类的`prototype`
+4. 函数也是对象，它是函数类`Function`的实例
 
 ```js
 class A {
@@ -771,7 +992,7 @@ A.prototype.__proto__ === Object.prototype // true
 class B extends A {
 }
 
-B.__proto__ === A // true
+B.__proto__ === A // true，这里A是谁的prototype？
 B.prototype.__proto__ === A.prototype // true
 
 class C extends null{}
@@ -808,18 +1029,20 @@ function B(){}
 var F = function(){};
 
 F.prototype = A.prototype
-B.prototype = new F();
+B.prototype = new F(); // 这里没有保证B.prototype的constructor属性
 Object.setPrototypeOf(B, A);
 
 B.prototype.__proto__ === A.prototype // true
-B.__proto__ === A // true
-B.__proto__ === Function.prototype // true
-```
+B.__proto__ === A // true 因为Object.setPrototypeOf(B, A);
+A.__proto__ === Function.prototype // true
 
-作为一个对象，子类（B）的原型（__proto__属性）是父类（A）；作为一个构造函数，子类（B）的原型对象（prototype属性）是父类的原型对象（prototype属性）的实例。
+// 原生类Array为例
+Array.prototype.__proto__ === Object.prototype // true
+Array.__proto__ === Function.prototype // true 任何一个没修改过__proto__的函数，都是Function的实例
 
-实例的__proto__就是类的prototype
-```js
+// 作为一个对象，子类（B）的原型（__proto__属性）是父类（A）；作为一个构造函数，子类（B）的原型对象（prototype属性）是父类的原型对象（prototype属性）的实例。
+
+// 实例的__proto__就是类的prototype
 let a = new A();
 let b = new B();
 
@@ -830,11 +1053,11 @@ b.__proto__.__proto__ === a.__proto__ // true
 
 ### Babel编译Class
 
-1. ES6里Class的方法在prototype里是不可枚举的，Babel实现了这个特性，利用defineProperty设置enumerable为false。
+1. ES6里Class的方法在`prototype`里是不可枚举的，Babel实现了这个特性，利用`defineProperty`设置`enumerable`为`false`。
 2. ES6静态方法，ES5直接挂在构造函数上。Babel也是这样做。
 3. 静态属性和静态方法类似。
 4. ES6的class必须要用new来调用。Babel也实现了这点，通过`this instanceof Constructor`检查当前对象是不是构造函数的实例来判断是不是通过new调用。
-5. Babel通过寄生组合式继承来实现。注意子类的prototype的constructor属性，要指向子类；注意子类的__proto__是父类；注意子类的prototype.__proto是父类prototype。
+5. Babel通过寄生组合式继承来实现。注意子类的`prototype`的`constructor`属性，要指向子类；注意子类的`__proto__`是父类；注意子类的`prototype.__proto__`是父类`prototype`。
 
 ```js
 // ES6继承
@@ -879,6 +1102,14 @@ prototype(Child, Parent);
 var child1 = new Child('kevin', '18');
 ```
 
+### 构造函数有返回值
+* https://www.cnblogs.com/guanghe/p/11356347.html
+
+原则上构造函数是不应该有返回值的。如果有，分下面两种情况。
+
+1. 返回值类型，对函数没影响
+2. 如果返回引用值，则new出来的对象是这个引用值
+
 ## Promise
 
 ### 关于then和catch的分析
@@ -919,7 +1150,7 @@ p2.then(v => {
   console.error('catch in p2 then：', e); // 走不到这里，因为前面没有未catch错误。但是这里是应该catch的，因为是分支末端。
 });
 
-// 因为catch之后还是返回Promise的，所以理论上也是可以继续catch，详细看下一个例子
+// 因为catch之后还是返回Promise的，所以理论上也是可以继续catch(因为上面p2.then后面catch过，所以这个p2.catch是没必要的，如果上面p2.then后面没有catch，那这里是有必要的)，详细看下一个例子
 p2.catch(e => {
   console.error('catch p2', e); // 走不到这里，因为p里的错误已经被catch过而且p2分支里也没出现错误
 });
@@ -956,11 +1187,18 @@ p2.then(v => {
   console.error('catch in p2 then：', e); // catch in p2 then： Error: throw in p2 因为p2是rejected的，所以这里也要catch
 });
 
-// 这里就是刚catch过又catch的情况，没完没了，因为之前的catch里抛出了错误
+// 这里就是刚catch过又catch的情况，没完没了，因为之前的p.catch里抛出了错误(因为上面p2.then后面catch过，所以这个p2.catch是没必要的，如果上面p2.then后面没有catch，那这里是有必要的)
 p2.catch(e => {
   console.error('catch p2', e); // catch p2 Error: throw in p2
 });
 
 console.log(p1); // PromiseStatus: rejected; PromiseValue: Error: error
 console.log(p2); // PromiseStatus: rejected; PromiseValue: Error: throw in p2
+```
+
+then的第一个参数传个非函数参数，那么它会被忽略，上一个Promise的结果会传到下一个then。当然，这些奇怪行为都是因为js没有类型检查导致的，实际代码中根本就不应该传个非函数参数进去。
+
+```js
+let p1 = new Promise(function(resolve, reject) {resolve('foo');});
+p1.then(1).then(function(res){console.log(res);}); // 打印foo
 ```

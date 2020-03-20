@@ -683,7 +683,74 @@ function makeRequireFunction(mod) {
 
 `_compile`函数会用底层的compileFunction去处理.js文件的文本内容，并且会用compiledWrapper把模块包起来。代码解释到这里结束，之所以说点到为止，是因为compileFunction和compiledWrapper无法单纯地从js的层面去分析了，所以对这两个函数的解释是基于猜测的。compileFunction的代码是在`src\node_contextify.cc`里的`ContextifyContext::CompileFunction`，这里不贴出来。
 
+## EventEmitter
+虽然nodejs很多模块基于EventEmitter，但是对一般开发者而言，更想问的是：“我应该什么时候用它？什么场景用它？”
+
+* 用于解耦，避免丢一堆callback进去：https://stackoverflow.com/questions/38881170/when-should-i-use-eventemitter
+* 典型的观察者模式：https://codeburst.io/event-emitters-and-listeners-in-javascript-9cf0c639fd63
+
+## Buffer
+```js
+// Buffer.from(array)方法，它依次从数组里取元素，作为自己的元素
+// 如果数组元素超出0xFF，它会丢掉高位，只保留低8位
+var arr = [600, 1000, 9, 255, 256];
+var arrX0 = [0x258, 0x3e8,0x9, 0xff, 0x100]; // 上面数组的16进制形式
+var buf = Buffer.from(arr); // <Buffer 58 e8 09 ff 00>
+
+// Buffer.from(arrayBuffer[, byteOffset[, length]])方法，创建出来的buffer是和传入的arrayBuffer共享内存的
+const arr = new Uint16Array(2);
+arr[0] = 5000;
+arr[1] = 4000;
+// Shares memory with `arr`.
+const buf = Buffer.from(arr.buffer);
+console.log(buf);
+// Prints: <Buffer 88 13 a0 0f>
+// Changing the original Uint16Array changes the Buffer also.
+arr[1] = 6000;
+console.log(buf);
+// Prints: <Buffer 88 13 70 17>
+
+// Buffer.from(buffer)方法，是复制传入buffer，不是共享内存
+const buf1 = Buffer.from('buffer');
+const buf2 = Buffer.from(buf1);
+buf1[0] = 0x61;
+console.log(buf1.toString());
+// Prints: auffer
+console.log(buf2.toString());
+// Prints: buffer
+```
+
 ## webpack
+
+### 参考连接
+* Element的webpack配置分析：https://juejin.im/post/5cb12844e51d456e7a303b64
+
+### 配置说明
+因为webpack的配置实在太多了，所以每个配置的具体用法还是参考官方文档比较稳妥。
+
+#### 导出库
+
+```js
+module.exports = {
+  output:{
+    library: '库名',
+    libraryTarget: '导出给谁(默认var)',
+    libraryExport: '导出什么(默认空，导出整个)'
+  },
+  externals: {
+    './b.js': './b.js'
+  }
+};
+```
+* libraryExport：如果`entry`用了es6的`export default 默认模块`语法，而你需要在`bundle`导出默认模块，那么这里记得填`default`(它的工作方式，就是把默认模块作为`exports`的`default`属性，然后最终bundle里把`exports.default`导出来)。如果是用nodejs那种`module.exports`方式导出整个模块，那么记得留空，留空就是导出整个`exports`。
+* libraryTarget：
+  * var：那么bundle里就是`var 库名 = 导出的东西`
+  * commonjs2：那么就是`module.exports = 导出的东西`
+  * umd：则是umd规范的库，并且用`library`里设置的名字作为模块名。umd兼容amd和commonjs，所以一般用umd就好了。
+* externals：表示不把这些打包到bundle，不过会在bundle里留下替换的引用，并且不同`libraryTarget`下替换方式不同
+  * var：直接替换成`module.exports = ./b.js;`
+  * commonjs2：替换成`module.exports = require("./b.js");`
+  * umd：`module.exports = __WEBPACK_EXTERNAL_MODULE__1__;`。`__WEBPACK_EXTERNAL_MODULE__1__`是传进工厂函数的参数，每个依赖用一个参数来代替。
 
 ### 打包简例
 主要看看bundle.js的注释

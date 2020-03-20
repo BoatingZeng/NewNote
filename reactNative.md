@@ -1,3 +1,26 @@
+## 坑
+
+### FLAG_ACTIVITY_NEW_TASK
+在`ReactContextBaseJavaModule`的`ReactMethod`里打开新的Activity。
+
+```java
+// 只是单纯的打开新的Activity
+Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+intent.addCategory(Intent.CATEGORY_OPENABLE);
+intent.setType("image/*");
+intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // 因为不是在Activity里打开，所以要设置这个FLAG
+reactContext.startActivity(intent);
+```
+
+```java
+// 用startActivityForResult打开，这里如果设置FLAG_ACTIVITY_NEW_TASK，新打开的这个Activity立刻就会返回RESULT_CANCELED
+int READ_REQUEST_CODE = 42;
+Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+intent.addCategory(Intent.CATEGORY_OPENABLE);
+intent.setType("image/*");
+reactContext.startActivityForResult(intent, READ_REQUEST_CODE, null);
+```
+
 ## 组件
 
 ### Image
@@ -10,6 +33,10 @@ https://www.hangge.com/blog/cache/detail_1542.html
 * 没有原生的placeholder功能，所以要自己代码实现。
 
 ## 原生模块
+别人打包好的原生模块，npm或者yarn安装好，记录到package.json，gradle sync的时候，会读取package.json，把原生模块的包添加到PackageList.java里。这个是新版(0.60后)react-native的功能。[详情](https://github.com/react-native-community/cli/blob/master/docs/autolinking.md)
+
+### 注意
+* 在js端调用@ReactMethod方法，参数类型和数量要和JAVA那端一致。
 
 ### 简单实例
 下面是构造一个原生模块的最简单代码。
@@ -208,6 +235,62 @@ eventEmitter.addListener('MyEvent', (event) => {
 // 因为类内部是通过testEvent方法触发MyEvent事件的，所以主动调用它
 ToastExample.testEvent();
 ```
+
+### ReactMethod的线程问
+正如react-native官方文档所说，如果要执行耗时任务，应该开启一个工作线程去执行。下面做一个简单测试。
+
+创建两个ReactContextBaseJavaModule，包含以下方法。
+```java
+@ReactMethod
+public void threadInfo() {
+    Log.d("threadTest", "threadInfo myTid = " + Process.myTid());
+    Log.d("threadTest", "threadInfo getId = " + Thread.currentThread().getId());
+    Log.d("threadTest", "threadInfo getName = " + Thread.currentThread().getName()); // 线程名：mqt_native_modules
+}
+
+// 这两个方法是一样的，都是执行耗时任务
+@ReactMethod
+public void longMethod1(){
+    Log.w("threadTest", "longMethod1 start");
+    Log.d("threadTest", "longMethod1 myTid = " + Process.myTid());
+    Log.d("threadTest", "longMethod1 getId = " + Thread.currentThread().getId());
+    for(int i=0; i<5; i++){
+        Log.d("threadTest", "longMethod1");
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    Log.w("threadTest", "longMethod1 end");
+}
+
+@ReactMethod
+public void longMethod2(){
+    Log.w("threadTest", "longMethod2 start");
+    Log.d("threadTest", "longMethod2 myTid = " + Process.myTid());
+    Log.d("threadTest", "longMethod2 getId = " + Thread.currentThread().getId());
+    for(int i=0; i<5; i++){
+        Log.d("threadTest", "longMethod2");
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    Log.w("threadTest", "longMethod2 end");
+}
+```
+
+调用这些方法，有如下结论：
+
+* 不同的ReactContextBaseJavaModule的(@ReactMethod)方法，是在同一个线程(`mqt_native_modules`)里运行的
+* 在一个耗时任务运行时，调用其他方法，后调用的方法会等到前面的方法返回才执行
+* 用按钮调用耗时任务，会发现，UI上，要等到耗时任务执行完毕(返回)，按钮的按下动画才会触发
+* `adb shell ps -T <进程ID>`查看线程信息，可以找到线程名为`mqt_native_modules`的线程。而且它不是主线程。主线程名在这个命令里看，是包名，在程序里打印，则为main。
+
+其他参考
+* https://zhuanlan.zhihu.com/p/45836822
 
 ## 原生UI组件
 * https://hackernoon.com/react-native-bridge-for-android-and-ios-ui-component-782cb4c0217d
@@ -454,3 +537,90 @@ import {name as appName} from './app.json';
 AppRegistry.registerComponent(appName, () => App);
 AppRegistry.registerHeadlessTask('SomeTaskName', () => require('./Headless'));
 ```
+
+## 第三方库
+
+### react-native-sqlite-storage
+文档不清晰(根本找不到文档)。下面列出用例。
+
+```js
+// 要在react-native环境下用，不过这里只写出主要代码
+import SQLiteStorage from 'react-native-sqlite-storage';
+SQLiteStorage.DEBUG(true);
+
+var database_name = 'test.db'; //数据库文件，看react-native-sqlite-storage的openDatabase这个函数，这里也就这个参数是用了的
+var database_version = '1.0';
+var database_displayname = 'MySQLite';
+var database_size = -1;
+var db = null;
+
+// 打开数据库
+db = SQLiteStorage.openDatabase(
+                database_name,
+                database_version,
+                database_displayname,
+                database_size,
+                ()=>{
+                    this._successCB('open');
+                },
+                (err)=>{
+                    this._errorCB('open',err);
+                });
+
+// 执行操作，可以用db.transaction或者直接db.executeSql
+
+// 创建用户表
+// 注意executeSql和transaction的成功回调和错误回调的顺序
+db.transaction((tx)=> {
+    tx.executeSql('CREATE TABLE IF NOT EXISTS USER(' +
+        'id INTEGER PRIMARY KEY  AUTOINCREMENT,' +
+        'name varchar,' +
+        'age VARCHAR,' +
+        'sex VARCHAR,' +
+        'phone VARCHAR,' +
+        'email VARCHAR,' +
+        'qq VARCHAR)'
+        , [], ()=> {
+            // executeSql的成功回调
+        }, (err)=> {
+            // executeSql的错误回调
+        });
+}, (err)=> {
+    // transaction的错误回调
+}, ()=> {
+    // transaction的成功回调
+});
+
+// 插入数据
+// 这里的userData是个数组，下面是在一个事务里插入多条记录
+let len = userData.length;
+db.transaction((tx)=>{
+    for (let i = 0; i < len; i++){
+        let user = userData[i];
+        let {name, age, sex, phone, email, qq} = user;
+        let sql = 'INSERT INTO user(name,age,sex,phone,email,qq)' + 'values(?,?,?,?,?,?)';
+        tx.executeSql(sql, [name,age,sex,phone,email,qq]); // 这里executeSql不设置回调也行
+    }
+}, (err)=>{
+    // transaction的错误回调
+}, ()=>{
+    // transaction的成功回调
+});
+
+// 查询数据
+db.executeSql('select * from user', [], (results) => {
+    var len = results.rows.length;
+    for (let i = 0; i < len; i++){
+        var u = results.rows.item(i); // item是个函数
+        console.log(u);
+    }
+}, (err) => {
+    console.error(err);
+});
+
+// 关闭数据库
+db.close();
+```
+
+### react-native-camera
+* https://react-native-community.github.io/react-native-camera/docs/rncamera

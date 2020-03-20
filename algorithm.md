@@ -1,11 +1,41 @@
 * 别人的一个文档：https://ziyi2.github.io/algorithms/
 
 ## 用与和异或做加法
+原理简述
+
+1. 2个数相加，可以分别把这2个数再拆成2个数，共4个数相加
+2. 拆法，拆成用异或相加的为一组，用与(进位)相加的为一组
+3. 然后组内相加，又得2个数，重复这个过程
+
+例子
+```js
+/**
+ * 如下两数相加
+ * 101101 a = a1 + a2
+ *  10101 b = b1 + b2
+ * 
+ * 拆成
+ * 异或组
+ * 101000 a1
+ *  10000 b1
+ * 
+ * 与进位组
+ *    101 a2
+ *    101 b2
+ * 
+ * 各组内相加得两个新数
+ * 111000
+ *   1010
+ * 
+ * 然后重复上面过程
+ * /
+```
+
 ```js
 // 循环版
-function bitAdd(b, a){
+function bitAdd(a, b){
   while(b){
-      [b, a] = [(b & a) << 1, b ^ a];
+      [a, b] = [a ^ b, (a & b) << 1];
   }
   return a;
 }
@@ -37,6 +67,7 @@ function bubbleSort(arr) {
 function quickSort(arr) {
   // 交换
   function swap(arr, a, b) {
+      if(a === b) return;
       var temp = arr[a];
       arr[a] = arr[b];
       arr[b] = temp;
@@ -45,24 +76,20 @@ function quickSort(arr) {
   // 分区
   function partition(arr, left, right) {
       /**
-       * 开始时不知最终pivot的存放位置，可以先将pivot交换到后面去
        * 这里用数组中间的元素为基准
        */
       var pivotIndex = Math.floor((right-left) / 2+left);
       var pivot = arr[pivotIndex];
       /**
-       * 存放小于pivot的元素时，是紧挨着上一元素的，否则空隙里存放的可能是大于pivot的元素，
-       * 故声明一个storeIndex变量，并初始化为left来依次紧挨着存放小于pivot的元素。
+       * 这个循环，就是通过交换，
+       * 把小于pivot的(较小数)都放到数组前面部分，
+       * 这里道理很简单，因为只要保证较小数都在前面，那较大数自然就都在后面，所以只需关注较小数
+       * storeIndex表示下一个准备放较小数的位置，
+       * 注意i<=right，因为pivot是中间的一个量，所以整个区间都要历遍
        */
       var storeIndex = left;
       for (var i = left; i <= right; i++) {
-          // 注意i<=right，因为pivot是中间的一个量，所以整个区间都要历遍
           if (arr[i] < pivot) {
-              /**
-               * 遍历数组，找到小于的pivot的元素，（大于pivot的元素会跳过）
-               * 将循环i次时得到的元素，通过swap交换放到storeIndex处，
-               * 并对storeIndex递增1，表示下一个可能要交换的位置
-               */
               swap(arr, storeIndex, i);
               if(pivotIndex == storeIndex) pivotIndex = i; // 如果原本的pivot和某个元素交换了，要记得pivot交换后的位置
               storeIndex++;
@@ -70,15 +97,15 @@ function quickSort(arr) {
       }
       // 最后： 将pivot交换到storeIndex处，基准元素放置到最终正确位置上
       swap(arr, pivotIndex, storeIndex);
-      return storeIndex;
+      return storeIndex; // 要返回基准值的位置，用于分成前后两部分
   }
 
   function sort(arr, left, right) {
       if (left >= right) return; // 相等，表示区间长度为1。大于，是因为上一次拿到的值刚好是区间最值，导致分割后少了一个区间
 
-      var storeIndex = partition(arr, left, right);
-      sort(arr, left, storeIndex - 1);
-      sort(arr, storeIndex + 1, right);
+      var divideIndex = partition(arr, left, right);
+      sort(arr, left, divideIndex - 1);
+      sort(arr, divideIndex + 1, right);
   }
 
   sort(arr, 0, arr.length - 1);
@@ -119,17 +146,19 @@ console.log(mergeSort(arr1, arr2));
 ```js
 let A = 'abaabaabbabaaabaabbabaab';
 let B = 'abaabbabaab';
+// F = [-1, -1, 0, 0, 1, -1, 0, 1, 2, 3, 4]
 
 //找B的最长共同前缀后缀（这里简称公共序列），这里算出来的是减1的，所以后面用的时候要加1
 function getF(B){
   let m = B.length;
   let F = new Array(m);
-  F[0] = -1; // 第一个肯定是-1
+  F[0] = -1; // 第一个肯定是-1，-1表示没有公共序列
   for (let i=1;i<m;i++) {
       let j=F[i-1];
-      // j表示的是公共序列的结束字符在B的位置
+      // j表示的是公共序列(按前缀来算)的结束字符在B的位置
       // 下面这段，就是在找之前的一个可用公共序列，并且拼上新增字符，也是公共序列，如果找不到，那就重新开始算
-      while (B[j+1]!=B[i] && j>=0) {
+
+      while (B[j+1]!=B[i] && j>=0) { // 条件里的j>=0，表示之前的片段里还有公共序列
         // 当之前一个B的片段有公共序列，但是把B[i]算进去时，并不能形成公共序列时，就要找次长公共序列
         // 找次长公共序列，其实就是找B[0:j]这段的公共序列
         // 如果B[0:j]没有公共序列，也就是F[j]==-1，就退出循环，这时公共序列不能增长了，会重新算
