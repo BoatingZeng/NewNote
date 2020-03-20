@@ -95,6 +95,6 @@ request.send(formData);
 ```
 
 ## js浮点计算问题
-* https://www.cnblogs.com/yadongliang/p/9067333.html
+* https://gist.github.com/rockagen/9913346
 
 基本思路是先把浮点数都倍化为整数，进行了四则运算，然后再除以10的n次幂。
