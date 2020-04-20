@@ -98,3 +98,14 @@ request.send(formData);
 * https://gist.github.com/rockagen/9913346
 
 基本思路是先把浮点数都倍化为整数，进行了四则运算，然后再除以10的n次幂。
+
+## 常用正则
+参考：https://github.com/cdoco/common-regex
+
+* 邮箱：/^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
+* 金额，两位小数：/((^[1-9]\d*)|^0)(\.\d{0,2}){0,1}$/
+
+## 杂项
+
+### document.write
+在head标签里用document.write写入script标签，会把script标签写入head里，但是如果在写script标签前用document.write写了诸如div这样的标签，那么script标签会被写到body里。
