@@ -105,6 +105,46 @@ request.send(formData);
 * 邮箱：/^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
 * 金额，两位小数：/((^[1-9]\d*)|^0)(\.\d{0,2}){0,1}$/
 
+## ArrayBuffer
+
+### 和字符串的转换
+如果字符串是UTF-16编码
+```js
+// ArrayBuffer 转为字符串，参数为 ArrayBuffer 对象
+function ab2str(buf) {
+  // 注意，如果是大型二进制数组，为了避免溢出，
+  // 必须一个一个字符地转
+  if (buf && buf.byteLength < 1024) {
+    return String.fromCharCode.apply(null, new Uint16Array(buf));
+  }
+
+  const bufView = new Uint16Array(buf);
+  const len =  bufView.length;
+  const bstr = new Array(len);
+  for (let i = 0; i < len; i++) {
+    bstr[i] = String.fromCharCode.call(null, bufView[i]);
+  }
+  return bstr.join('');
+}
+
+// 字符串转为 ArrayBuffer 对象，参数为字符串
+function str2ab(str) {
+  const buf = new ArrayBuffer(str.length * 2); // 每个字符占用2个字节
+  const bufView = new Uint16Array(buf);
+  for (let i = 0, strLen = str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
+```
+
+如果是UTF-8编码，可以用TextDecoder。TextEncoder默认只支持utf-8。
+```js
+const decoderUTF8 = new TextDecoder();
+const decoderUTF16 = new TextDecoder('utf-16');
+// 然后调用它们的decode方法，可以直接decode ArrayBuffer或者TypeArray。
+```
+
 ## 杂项
 
 ### document.write

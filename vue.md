@@ -131,12 +131,13 @@ new Vue({
 ```
 
 ## Prop
-注意，用prop给子组件的data赋初值后，改变prop，子组件里被赋值的那个data不会跟着变。下面的例子里，点击按钮后，fromParent会变new message，但是子组件里的localMessage不会变。
+注意，用prop给子组件的data赋初值后，改变prop，子组件里被赋值的那个data不会跟着变。下面的例子里，点击改变父message按钮后，fromParent会变new message，但是子组件里的localMessage不会变。另外，关于sync修饰符(语法糖)，可以通过`this.$emit('update:fromParent', 'child change parent');`在子组件里改变父组件的fromParent。
 ```html
 <template id="childTemplate">
   <div>
     <div>fromParent：{{fromParent}}</div>
     <div>localMessage：{{localMessage}}</div>
+    <button @click="testSync">子改父</button>
   </div>
 </template>
 
@@ -153,6 +154,11 @@ let Child = Vue.component('child', {
   data() {
     return {
       localMessage: this.fromParent
+    }
+  },
+  methods: {
+    testSync() {
+      this.$emit('update:fromParent', 'child change parent');
     }
   },
   template: '#childTemplate'
