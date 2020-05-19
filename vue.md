@@ -428,6 +428,26 @@ vue-router(现在版本3.1.3，现在时间2020-02-05)有动态添加路由的�
 1. 检测Nuxt.js(通过`window.__NUXT__ || window.$nuxt`)
 2. 扫描全部页面元素，如果有元素包含`__vue__`属性，则使用了vue
 
+### 使用scoped时注意事项
+
+#### 子组件的根节点问题
+子组件的根节点的`data-v-xxxxxx`，会被父组件影响，也就是说它同时有了子组件自己的`data-v-xxxxxx`属性和父组件的`data-v-xxxxxxx`属性。这个特性是特意设计的，可以利用它来在父组件来控制子组件的样式。同时要注意这个特性，以免出现意图之外的情况。
+
+#### 使用deep的情况
+```html
+<style scoped>
+.a >>> .b { /* ... */ }
+</style>
+<!-- 上面使用了deep，会生成如下css -->
+<style>
+.a[data-v-f3f3eg9] .b { /* ... */ }
+</style>
+<!-- 如果不用deep的话，生成的css应该如下 -->
+<style>
+.a .b[data-v-f3f3eg9] { /* ... */ }
+</style>
+```
+
 ## 面试题中关于vue的
 
 ### 写React/Vue项目时为什么要在列表组件中写key，其作用是什么？
