@@ -722,6 +722,29 @@ console.log(buf2.toString());
 
 ## webpack
 
+### HMR(模块热加载)
+过程简述：
+1、前端和后端通过websocket连接
+2、后端检测到代码(模块)更新，通过websocket通知前端
+3、前端知道有更新后，通过jsonp获取对应代码，插入到页面
+4、这个插入到页面的代码是对`webpackHotUpdate`函数的调用，会替换对应的模块
+5、模块替换后会调用模块代码里通过`module.hot.accept`注册的更新逻辑。
+
+主要的更新逻辑在`hotApply`函数里。而`hotApply`被`hotUpdateDownloaded`调用，`hotAddUpdateChunk`会调用`hotUpdateDownloaded`，`webpackHotUpdate`会调用`hotAddUpdateChunk`。所以上面第4步插入的代码会最终调用`hotApply`。
+
+参考：
+* HMR：https://juejin.im/post/5d4d3e5ce51d4561f64a07d1
+* HMR：https://zhuanlan.zhihu.com/p/30669007
+* vue-loader的HMR实现：https://juejin.im/entry/5997c4ecf265da24744d75cc
+
+vue-loader的源码有个简单的例子，可以直接运行开发环境然后从浏览器里获取`bundle.js`等代码来查看。
+
+前端通过jsonp拿到更新的代码，插入到页面后，调用`webpackHotUpdate`，用新的模块替换掉旧的模块。
+
+vue的HMR是通过vue-loader实现，在编译`.vue`文件时，注入`module.hot`相关的代码。在`module.hot.accept`中调用`vue-hot-reload-api`的函数进行具体的更新操作。
+
+模块里调用`accept`是把(模块更新后要执行的)回调函数注册到`_acceptedDependencies`里。然后在模块更新时调用。
+
 ### 参考连接
 * Element的webpack配置分析：https://juejin.im/post/5cb12844e51d456e7a303b64
 

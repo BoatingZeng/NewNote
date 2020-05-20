@@ -178,3 +178,6 @@ Service Worker是一种特殊的Web Worker
 * as会决定加载的优先级，一般来说脚本就用script，样式就用style，style优先级比script高。
 * prefetch是告诉浏览器(下一个)页面可能需要的资源，让浏览器空闲时加载，但浏览器不一定会加载这些资源。
 * 不要混用，否则会重复加载。
+
+## SSO(单点登录)
+参考：https://www.jianshu.com/p/75edcc05acfd
