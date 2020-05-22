@@ -26,6 +26,9 @@ https://www.freebuf.com/articles/web/186880.html
 2. CSRF Token。这个token不在cookie里发送。可以放在header或者查询参数里。
 3. 双重Cookie验证。前端生成一个随机cookie，向后端请求的时候，在URL查询参数中也带上这个cookie的值，这样后端可以对比cookie中和URL中的值是否一致。这个方法相对简单，但难以做到子域名的隔离（因为前端取cookie是有域名限制的）。
 
+## CRLF注入
+http的header是用回车换行分隔的，如果攻击者的请求里包含了回车换行的字符串，而服务器直接用这些值来设置响应header，就有可能被注入了攻击者的header。
+
 ## HTTP1.0、HTTP1.1、HTTP2.0、SPDY
 
 * HTTP1.0虽然有Connection:keep-alive的定义，但是没有标准实现，到了HTTP1.1才有了标准实现并且默认开启
