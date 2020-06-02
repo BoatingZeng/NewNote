@@ -149,3 +149,17 @@ const decoderUTF16 = new TextDecoder('utf-16');
 
 ### document.write
 在head标签里用document.write写入script标签，会把script标签写入head里，但是如果在写script标签前用document.write写了诸如div这样的标签，那么script标签会被写到body里。
+
+### NaN和isNaN
+```js
+// 单纯地用自己比较自己判断NaN会出问题
+function myIsNaN(n) {
+  return n != n;
+}
+myIsNaN(new Number(NaN)); // false，因为new Number(NaN)返回一个Number对象，不是基本类型
+
+// 应该用js原生的isNaN函数，或者用下面这种方法(underscore的isNaN)
+_.isNaN = function(obj) {
+  return _.isNumber(obj) && obj != +obj; // 关键是+号把Number类转换成基本类型
+};
+```
