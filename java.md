@@ -3,6 +3,9 @@
 ## java语言
 
 ### 泛型
+参考：
+* 使用场景：https://www.cnblogs.com/mzzcy/p/7231892.html
+
 ```java
 class Food {}
 class Fruit extends Food {}
