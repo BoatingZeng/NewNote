@@ -48,7 +48,7 @@ p2.set(null);
 // 记住这里的界是包括Fruit自己的，这就是为什么不能set个Food进去，因为万一Plate里面是Fruit呢
 
 Object a4 = p2.get();
-Food a5 = p2.get();
+Food a5 = p2.get(); // 报错
 Fruit a6 = p2.get(); // 报错，required type：Fruit. provided：capture of ? super Fruit.
 Apple a7 = p2.get(); // 报错，和上面差不多
 // 这里只能取出Object，因为Fruit的父类可能性太多，只有全部类的父类Object才能兼容全部
@@ -60,7 +60,7 @@ p3.set(new Apple()); // 报错，和上面差不多
 p3.set(null);
 
 Object a8 = p3.get();
-Food a9 = p3.get();
+Food a9 = p3.get(); // 报错
 Fruit a10 = p3.get(); // 报错，required type：Fruit. provided：capture of ?.
 Apple a11 = p3.get(); // 报错，和上面差不多
 
