@@ -47,6 +47,115 @@ function sum (a, b) {
 }
 ```
 
+## 中缀转后缀
+参考：https://www.cnblogs.com/jiushixihuandaqingtian/p/11241370.html
+
+```js
+let raw = '2+3.4*(3+1)-6'
+
+function isOperator(o) {
+  if (o === '+') return true;
+  if (o === '-') return true;
+  if (o === '*') return true;
+  if (o === '/') return true;
+  if (o === '(') return true;
+  if (o === ')') return true;
+  return false;
+}
+
+const operPriority = {
+  '+': 1,
+  '-': 1,
+  '*': 2,
+  '/': 2
+};
+
+function middleToRear(raw) {
+  // 先拆成数组
+  let rawList = [];
+  let numStr = '';
+  for (let i=0; i<raw.length; i++) {
+    let s = raw[i];
+    if (isOperator(s)) {
+      if (numStr) rawList.push(numStr)
+      rawList.push(s);
+      numStr = '';
+    } else {
+      numStr += s;
+    }
+  }
+  if (numStr) rawList.push(numStr);
+
+  let numStack = [];
+  let operStack = [];
+
+  console.log(rawList)
+
+  rawList.forEach(s => {
+    if(isOperator(s)) {
+      if (operStack.length === 0) {
+        // 如果operStack空，直接入
+        operStack.push(s);
+      } else if(s === '(') {
+        // 如果是(，直接入
+        operStack.push(s);
+      } else if(s === ')') {
+        //符号栈栈顶直到左括号之前的符号放入数字栈
+        while(operStack[operStack.length - 1] !== '(') {
+          numStack.push(operStack.pop())
+        }
+        //把左括号弹出来
+        operStack.pop()
+      } else {
+        //判断优先级,当前符号优先级小于等于符号栈栈顶优先级,将符号栈栈顶弹出加入数字栈,
+        //直到找到当前符号优先级大于符号栈栈顶优先级为止,再将当前符号加入符号栈
+        while (operStack.length !== 0 && operPriority[s] <= operPriority[operStack[operStack.length - 1]]) {
+          numStack.push(operStack.pop());
+        }
+        //将当前符号加入符号栈
+        operStack.push(s)
+      }
+    } else {
+      // 如果是操作数，直接入numStack
+      numStack.push(s);
+    }
+  });
+
+  //将符号栈中剩余符号加入数字栈
+  while (operStack.length !== 0){
+    numStack.push(operStack.pop());
+  }
+  console.log(numStack)
+  
+  // 计算结果
+  let rStack = []
+  numStack.forEach(s => {
+    if (isOperator(s)) {
+      let num1 = parseFloat(rStack.pop())
+      let num2 = parseFloat(rStack.pop())
+      let result = 0
+
+      if (s === '+') {
+        result = num2 + num1
+      } else if (s === '-') {
+        result = num2 - num1
+      } else if (s === '*') {
+        result = num2 * num1
+      } else if (s === '/') {
+        result = num2 / num1
+      }
+      rStack.push(result)
+    } else {
+      rStack.push(s)
+    }
+  })
+
+  return rStack.pop()
+}
+
+console.log(middleToRear(raw))
+```
+
 ## 排序
 ```js
 // 冒泡排序
