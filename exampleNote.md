@@ -176,3 +176,40 @@ _.isNaN = function(obj) {
   return _.isNumber(obj) && obj != +obj; // 关键是+号把Number类转换成基本类型
 };
 ```
+
+## 常用功能函数
+
+### 倒计时
+```js
+function countDown(endTime, cb) {
+  function countDownLoop() {
+    let now = (new Date()).getTime();
+    let remainTime = endTime - now;
+    cb(remainTime);
+    if (remainTime <= 0) return;
+    setTimeout(countDownLoop, 1000);
+  }
+  countDownLoop();
+}
+
+function render(remainTime) {
+  if (remainTime >= 0) {
+    let d,h,m,s;
+    d = Math.floor(remainTime / 1000 / 60 / 60 / 24);
+    h = Math.floor((remainTime / 1000 / 60 / 60) % 24);
+    m = Math.floor((remainTime / 1000 / 60) % 60);
+    s = Math.floor((remainTime / 1000) % 60);
+    s = s < 10 ? '0' + s : s;
+    m = m < 10 ? '0' + m : m;
+    h = h < 10 ? '0' + h : h;
+    d = d < 10 ? '0' + d : d;
+    let newCountState = {
+      day: d,
+      hour: h,
+      minute: m,
+      second: s
+    };
+    console.log(newCountState);
+  }
+}
+```
