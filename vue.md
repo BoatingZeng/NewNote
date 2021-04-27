@@ -130,6 +130,152 @@ new Vue({
 </html>
 ```
 
+把slot传到被封装的组件。child内封装grandchoild，它们由相同的slot定义。
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <title>vue slot test</title>
+</head>
+<template id="childTemplate">
+  <div>
+    <div>childTemplate</div>
+    <grandchild>
+      <slot>child默认slot</slot><!-- 会作为grandChild的默认slot的内容 -->
+      <template v-slot:slot_1="slotProps"><!-- 会作为grandChild的slot_1的内容 -->
+        <slot name="slot_1" :user="slotProps.user">child具名slot_1</slot><!-- child接收外层传入child的slot_1的内容 -->
+      </template>
+    </grandchild>
+  </div>
+</template>
+<template id="grandChildTemplate">
+  <div>
+    <div>grandChildTemplate</div>
+    <slot>grandChild默认slot</slot>
+    <slot name="slot_1" :user="user">grandChild具名slot1</slot>
+  </div>
+</template>
+<script src="vue.js"></script>
+<body>
+  <div id="app">
+    <child>
+      <div>最外层传入默认slot</div><!-- 会作为child的默认slot的内容 -->
+      <template v-slot:slot_1="slotProps"><!-- 会作为child的slot_1的内容 -->
+        <div>最外层传入具名slot_1({{slotProps.user.firstName}})</div>
+      </template>
+    </child>
+  </div>
+<script>
+Vue.component('grandchild', {
+  data() {
+    return {
+      user: {
+        firstName: 'Boating',
+        lastName: 'Zeng',
+      }
+    };
+  },
+  template: '#grandChildTemplate'
+});
+
+Vue.component('child', {
+  data() {
+    return {};
+  },
+  template: '#childTemplate'
+});
+
+new Vue({
+  el: '#app',
+  data(){
+    return {};
+  },
+})
+</script>
+</body>
+</html>
+```
+
+利用render透传。下面例子包含了属性、事件、插槽的透传。
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <title>vue slot test</title>
+</head>
+<template id="grandChildTemplate">
+  <div>
+    <button @click="$emit('handle-click')">test</button>
+    <div>country: {{country}}</div>
+    <div>grandChildTemplate</div>
+    <slot>grandChild默认slot</slot>
+    <slot name="slot_1" :user="user">grandChild具名slot1</slot>
+  </div>
+</template>
+<script src="vue.js"></script>
+<body>
+  <div id="app">
+    <child country="China" @handle-click="handle">
+      <div>最外层传入默认slot</div>
+      <template v-slot:slot_1="slotProps">
+        <div>最外层传入具名slot_1({{slotProps.user.firstName}})</div>
+      </template>
+    </child>
+  </div>
+<script>
+const GrandChild = Vue.component('grandchild', {
+  props: ['country'],
+  data() {
+    return {
+      user: {
+        firstName: 'Boating',
+        lastName: 'Zeng',
+      }
+    };
+  },
+  template: '#grandChildTemplate'
+});
+
+function hoc(c) {
+  return {
+    data() {
+      return {};
+    },
+    render(h) {
+      console.log('listeners', this.$listeners); // { handle-click }
+      console.log('attrs', this.$attrs); // 没在props里定义的属性在这里，{country: 'China'}
+      console.log('props', this.$props); // 没定义props，因此undefined
+      console.log('slots', this.$slots);
+      console.log('scopedSlots', this.$scopedSlots); // 文档建议直接用$scopedSlots，因为它包含了$slots
+      return h(c, {
+        on: this.$listeners,
+        attrs: this.$attrs,
+        scopedSlots: this.$scopedSlots,
+      });
+    }
+  }
+}
+
+Vue.component('child', hoc(GrandChild));
+
+new Vue({
+  el: '#app',
+  data(){
+    return {};
+  },
+  methods: {
+    handle() {
+      alert('click');
+    }
+  },
+})
+</script>
+</body>
+</html>
+```
+
 ## Prop
 注意，用prop给子组件的data赋初值后，改变prop，子组件里被赋值的那个data不会跟着变。下面的例子里，点击改变父message按钮后，fromParent会变new message，但是子组件里的localMessage不会变。另外，关于sync修饰符(语法糖)，可以通过`this.$emit('update:fromParent', 'child change parent');`在子组件里改变父组件的fromParent。
 ```html
