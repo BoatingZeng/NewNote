@@ -257,6 +257,33 @@ function hoc(c) {
     }
   }
 }
+/**
+ * 复杂一点的例子。不过复杂的情况还是用jsx比较人性。
+function hoc(c) {
+  return {
+    data() {
+      return {};
+    },
+    render(h) {
+      return h('div', // 组件的主体是一个div
+        {
+          style: {
+            color: 'red',
+          }
+        }, 
+      [ // 包含了两个子元素
+        h('div', '其他子元素'), // 第一个简单子元素
+        h(c, // 第二个子元素，是另一个组件。这里一样可以透传各种属性。
+        {
+          on: this.$listeners,
+          attrs: this.$attrs,
+          scopedSlots: this.$scopedSlots,
+        }),
+      ]);
+    }
+  }
+}
+*/
 
 Vue.component('child', hoc(GrandChild));
 
