@@ -7,6 +7,7 @@
 * [MySQL](mysql)
 * [nginx](nginx)
 * [javascript](javascript)
+* [typescript](typescript)
 * [java](java)
 * [css](css)
 * [vue](vue)
