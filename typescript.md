@@ -4,7 +4,7 @@
 作用：
 1. 使用never避免出现新增了联合类型没有对应的实现，目的就是写出类型绝对安全的代码
 
-```ts
+```typescript
 type Foo = string | number;
 
 function controlFlowAnalysisWithNever(foo: Foo) {
