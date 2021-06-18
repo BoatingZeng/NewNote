@@ -46,6 +46,10 @@ http://blog.csdn.net/wolinxuebin/article/details/7845917
   1. 进入mysql数据库控制台，如：mysql -u root -p
   2. mysql>use 数据库  **一定要记得先选择数据库**
   3. mysql>source d:\wcnc_db.sql
+5. 只导出数据
+```
+    mysqldump -t job -u root -p > test.sql
+```
 
 远程： 加 --host
 http://dev.mysql.com/doc/refman/5.7/en/mysqldump.html
