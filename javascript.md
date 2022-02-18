@@ -135,7 +135,7 @@ fs.readFile(__filename, () => {
 // immediate
 // timeout
 // 这里主体代码执行完毕后，就等待i/o回调，i/o回调在poll阶段，
-// poll阶段的下一个阶段时check阶段，setImmediate会在这里执行，
+// poll阶段的下一个阶段是check阶段，setImmediate会在这里执行，
 // 之后再回到timer阶段，所以setImmediate会先执行
 ```
 
@@ -228,7 +228,7 @@ setInterval(replaceThing, 100);
 ### 参考
 * https://auth0.com/blog/four-types-of-leaks-in-your-javascript-code-and-how-to-get-rid-of-them/
 
-js中引用了dom对象，会导致即使dom对象从dom树中移除也无法回收，所以要注意把这个js中的引用也清除。另外，自节点没有被回收，父节点也不会被回收。
+js中引用了dom对象，会导致即使dom对象从dom树中移除也无法回收，所以要注意把这个js中的引用也清除。另外，子节点没有被回收，父节点也不会被回收。
 
 ## let和const
 
@@ -430,7 +430,7 @@ function foo(x = x) {// 相当于let x=x
 foo() // ReferenceError: x is not defined
 
 var x = 1;
-function foo(x, y = function() { x = 2; }) {
+function foo(x, y = function() { x = 2; }) { // y里的x就是上面的x
   var x = 3; // 函数体内部声明var x，函数体后面的x都是函数体内部声明的x。
   y();
   console.log(x);
@@ -439,7 +439,7 @@ foo() // 3
 x // 1
 
 var x = 1;
-function foo(x, y = function() { x = 2; }) {
+function foo(x, y = function() { x = 2; }) { // y里的x就是上面的x
   x = 3; // 这个x就是参数x。函数参数相当于函数体的外层作用域。
   y();
   console.log(x);
