@@ -539,6 +539,32 @@ var c = new Cat(); // 类比：var c = {}; Cat.call(c);
 c.jumps(); // 9
 c.jumps.call({lives: 999}); // 9
 
+Cat(); // 这样调用的话，this是全局对象，比如window，因为定义在全局的函数，实际上是挂在全局对象上的，比如这个Cat其实是window.Cat，这样直接调Cat，实际上是调window.Cat()，因此这Cat()里的this是window。
+
+function cat(){
+  console.log(this)
+  function dog() {
+    console.log(this)
+  }
+  dog();
+}
+cat(); // 打印两个window
+
+var c = {}; c.cat = cat;
+c.cat(); // 第一个是c本身，第二个依然是window。一个函数没有挂到任何对象下，它就是挂在window上，这里dog就是这种情况。
+
+function cat(){
+  console.log(this)
+  var dog = () => {
+    console.log(this)
+  }
+  dog();
+}
+cat(); // 打印两个window
+
+var c = {}; c.cat = cat;
+c.cat(); // 两个都是c本身。因为里面的dog是箭头函数，它的this跟外层this一样。
+
 // 事件注册时注意
 var button = document.getElementById('press');
 button.addEventListener('click', () => {
