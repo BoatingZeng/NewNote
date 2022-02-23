@@ -182,6 +182,64 @@ http {
 }
 ```
 
+```
+server {
+    listen 80;
+    server_name www.gdls.ltd gdls.ltd;
+    rewrite ^/(.*)$ https://www.gdls.ltd:443/$1 permanent;
+}
+
+server {
+    listen 443;
+    server_name www.gdls.ltd gdls.ltd;
+
+    ssl on;
+    ssl_certificate /home/ubuntu/qjx/ssl/1_gdls.ltd_bundle.crt;
+    ssl_certificate_key /home/ubuntu/qjx/ssl/2_gdls.ltd.key;
+    ssl_session_timeout 5m;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+    ssl_prefer_server_ciphers on;
+
+    location /admin {
+        root /home/ubuntu/qjx/html;
+        index index.html;
+    }
+
+    location /home {
+        root /home/ubuntu/qjx/html;
+        index index.html;
+    }
+
+    location /api/qjx {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Real-Port $remote_port;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_pass http://localhost:7001;
+    }
+
+    location /test/admin {
+        root /home/ubuntu/qjx/html;
+        index index.html;
+    }
+
+    location /test/api/qjx {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Real-Port $remote_port;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        
+        rewrite ^/test/(.*)$ /$1 break;
+        proxy_pass http://localhost:7002;
+    }
+
+    location / {
+        root /home/ubuntu/qjx/html/home;
+        index index.html;
+    }
+}
+```
+
 ## 需要调整的参数
 
 1. `cache/cache_dm`：缓存文件路径

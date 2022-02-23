@@ -130,7 +130,7 @@ new Vue({
 </html>
 ```
 
-把slot传到被封装的组件。child内封装grandchoild，它们由相同的slot定义。
+把slot传到被封装的组件。child内封装grandchild，它们由相同的slot定义。
 ```html
 <!DOCTYPE html>
 <html lang="zh">
