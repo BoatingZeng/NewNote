@@ -9,7 +9,7 @@ A \Rightarrow B \\
 \urcorner A \Leftarrow \urcorner B
 \end{split}$$
 
-$证明:度量空间X的子集M在X中稀疏 \Leftrightarrow(\bar{M})^c在X中稠密$
+$证明:度量空间X的子集M在X中稀疏 \Leftrightarrow(\overline{M})^c在X中稠密$
 
 $在欧氏空间中,以向量长度|x|为向量x的范数。方阵作为算子,则有范数不为1的幂等算子T:$
 
