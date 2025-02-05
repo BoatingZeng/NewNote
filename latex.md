@@ -22,12 +22,12 @@ T=
 $$
 
 $$
-\|T\|=\sup_{\substack{x\in\mathcal{D}(T) \\ 
-\|x\|=1}}\|Tx\|=5\sqrt{2}
+\Vert T\Vert =\sup_{\substack{x\in\mathcal{D}(T) \\ 
+\|x\|=1}}\Vert Tx\Vert =5\sqrt{2}
 $$
 
 $$
-\|Tx\|在x=\begin{bmatrix}
+\Vert Tx\Vert 在x=\begin{bmatrix}
 \sqrt{5}/5 \\ 
 -2\sqrt{5}/5
 \end{bmatrix}时取到最大值
