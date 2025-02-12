@@ -32,3 +32,7 @@ $$
 -2\sqrt{5}/5
 \end{bmatrix}时取到最大值
 $$
+
+$T是复希尔伯特空间H上的正有界自伴线性算子,证明:\Vert T^{1/2}\Vert =\Vert T\Vert^{1/2} $
+
+$(注意:不清楚该等式是否正确,此处只是latex例子)A是自伴算子,证明其范数\Vert A\Vert=\sup_{\|x\|=1} |\langle Ax,x\rangle |$
