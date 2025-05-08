@@ -1,5 +1,7 @@
 手册: https://mirrors.ustc.edu.cn/CTAN/info/lshort/chinese/lshort-zh-cn.pdf
 
+下面的命题只是作为latex例子,不保证正确性。
+
 $$
 E = mc^2
 $$
@@ -39,4 +41,8 @@ $(注意:不清楚该等式是否正确,此处只是latex例子)A是自伴算子
 
 $X,Y为拓扑空间E的子集,给X,Y,X \cup Y以诱导拓扑,A为X \cup Y的子集,A \cap X与A\cap Y分别为X与Y的开集。A为X \cup Y的开集吗？$
 
-$设X,Y为拓扑空间E的子集。给X,Y与X \cup Y以诱导拓扑。若f:X\rightarrow Z,g:Y\rightarrow Z为两个映射,假设它们在X\cap Y上一致。定义f\cup g:X\cup Y \rightarrow Z为f\cup g(x)=f(x),当x \in X;f\cup g(y)=f(y),当y \in Y。X+Y为X与Y的无交并,映射j: X+Y \rightarrow X\cup Y, j限制在X或Y上时,均为含入映射。证明:(a)j连续;(b)复合映射(f\cup g)j:X+Y \rightarrow Z为连续,当且仅当f与g连续。$
+$从E^{n+1}-\{0\}出发,两个点将被粘合在一起,当且仅当它们位于同一条过原点的直线上,所得的粘合空间记为Y,证明Y是Hausdorff空间。$
+
+$从E^{n+1}-\{0\}出发,两个点将被粘合在一起,当且仅当它们位于同一条过原点的直线上且到原点距离相等,所得得空间是粘合空间吗？(AI说这个空间其实也是实射影空间)$
+
+$E^{n+1}-\{0\}可以缩放到S^n是什么意思?(同伦)$
