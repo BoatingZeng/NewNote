@@ -56,3 +56,5 @@ $证明：\{ m+n\sqrt{2} |n,m \in Z \}在R中稠密。$
 $k_1,k_2,N为正整数,N+1\ge k_1>k_2,a为某无理数,|(k_1a \space mod \space 1) - (k_2a \space mod \space 1)| < 1/N,能推出|(k_1a - k_2a \space mod \space 1| < 1/N吗？$
 
 $a为某无理数,证明：\{ na \space mod \space 1|n \in Z\}在[0,1)中稠密。$
+
+$若G像同胚群一样作用于单连通空间X并且每一点x \in X有邻域U使得U \cap g(U) = \varnothing 对于一切g \in G - \{e\} 成立。则\pi_1(X/G)同构于G。固定一点x_0 \in X,对于g \in G用一条道路 \gamma 把x_0连接到g(x_0)。若\pi:X \rightarrow X/G为投影,则\pi\circ\gamma是X/G内基于\pi(x_0)的一条环道。按\phi(g)=<\pi\circ\gamma>定义\phi:G\rightarrow\pi_1(X/G,\pi(x_0)),证明\phi是同态。$
