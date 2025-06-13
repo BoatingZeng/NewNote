@@ -58,3 +58,7 @@ $k_1,k_2,N为正整数,N+1\ge k_1>k_2,a为某无理数,|(k_1a \space mod \space 
 $a为某无理数,证明：\{ na \space mod \space 1|n \in Z\}在[0,1)中稠密。$
 
 $若G像同胚群一样作用于单连通空间X并且每一点x \in X有邻域U使得U \cap g(U) = \varnothing 对于一切g \in G - \{e\} 成立。则\pi_1(X/G)同构于G。固定一点x_0 \in X,对于g \in G用一条道路 \gamma 把x_0连接到g(x_0)。若\pi:X \rightarrow X/G为投影,则\pi\circ\gamma是X/G内基于\pi(x_0)的一条环道。按\phi(g)=<\pi\circ\gamma>定义\phi:G\rightarrow\pi_1(X/G,\pi(x_0)),证明\phi是同态。$
+
+$X是篦式空间,X=\bigcup_{n=1}^\infty(\{1/n\}\times[0,1])\cup(\{0\}\times[0,1])\cup([0,1]\times \{0\})。1_X是X中的恒等映射。p=(0,1)是X中一点,c_p是X中的常值映射,对一切x\in X,c_p(x)=p。证明:不存在从1_X到c_p相对于\{p\}的伦移。$
+
+$在E^3内,A=\{(x,y,z)|z>0\},B是E^2内的道路连通空间,C=\{(x,y,z)|(x,y)\in B, -1<z<=0\}, D=A \cup C,证明D是单连通。$
