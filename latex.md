@@ -64,3 +64,5 @@ $X是篦式空间,X=\bigcup_{n=1}^\infty(\{1/n\}\times[0,1])\cup(\{0\}\times[0,1
 $在E^3内,A=\{(x,y,z)|z>0\},B是E^2内的道路连通空间,C=\{(x,y,z)|(x,y)\in B, -1<z<=0\}, D=A \cup C,证明D是单连通。$
 
 $设n>1，A为E^n的紧致子集。证明E^n-A恰好有一个无界的连通分支。$
+
+$p和q是互质正整数，x=(\frac{p+q}{p})^\frac{p}{q}。证明：x \in Q \rightarrow p=n^q。$
